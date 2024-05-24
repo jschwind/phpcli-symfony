@@ -3,19 +3,13 @@
 const COLORS=['GREEN'=>"\033[32m", 'RED'=>"\033[31m", 'NONE'=>"\033[0m",];
 const NL="\n";
 
-$rp=realpath(__DIR__).DIRECTORY_SEPARATOR;
+$rp=realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR;
 
 if ($argc<4) {
 	echo COLORS['RED'].'Missing arguments.'.COLORS['NONE'].NL;
 	echo 'Usage: php project.php <project-name> <git-username> <git-email>'.NL;
 	echo 'Example: php project.php my-project username username@domain.tld'.NL;
 	exit(1);
-}
-
-$o=$rp.'output'.DIRECTORY_SEPARATOR.$argv[1].DIRECTORY_SEPARATOR;
-
-if (!is_dir($o)) {
-	mkdir($o, 0777, true);
 }
 
 $project_name = $argv[1];
@@ -31,6 +25,24 @@ if (isset($argv[5])) {
 } else {
 	$mysql_version = '11.3';
 }
+
+
+
+$o=$rp.'output'.DIRECTORY_SEPARATOR.$argv[1].DIRECTORY_SEPARATOR;
+
+if (!is_dir($o)) {
+    mkdir($o, 0777, true);
+}
+
+if (isset($argv[6])) {
+    $o=$argv[6];
+}
+
+if (substr($o, -1) !== DIRECTORY_SEPARATOR) {
+    $o .= DIRECTORY_SEPARATOR;
+}
+
+echo $path;
 
 if (preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $project_name) === 0) {
 	echo COLORS['RED'].'Invalid project name. [a-zA-Z0-9-_.]'.COLORS['NONE'].NL;
