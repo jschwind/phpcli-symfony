@@ -30,19 +30,17 @@ if (isset($argv[5])) {
 
 $o=$rp.'output'.DIRECTORY_SEPARATOR.$argv[1].DIRECTORY_SEPARATOR;
 
-if (!is_dir($o)) {
-    mkdir($o, 0777, true);
-}
-
 if (isset($argv[6])) {
     $o=$argv[6];
+}
+
+if (!is_dir($o)) {
+    mkdir($o, 0777, true);
 }
 
 if (substr($o, -1) !== DIRECTORY_SEPARATOR) {
     $o .= DIRECTORY_SEPARATOR;
 }
-
-echo $path;
 
 if (preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $project_name) === 0) {
 	echo COLORS['RED'].'Invalid project name. [a-zA-Z0-9-_.]'.COLORS['NONE'].NL;
