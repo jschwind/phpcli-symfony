@@ -1,209 +1,311 @@
 <?php
 
-const COLORS=['GREEN'=>"\033[32m", 'RED'=>"\033[31m", 'NONE'=>"\033[0m",];
-const NL="\n";
+class ProjectSetup
+{
+    const COLORS = ['GREEN'=>"\033[32m", 'RED'=>"\033[31m", 'NONE'=>"\033[0m",];
+    const NL = "\n";
+    const DB_TYPES = ['mysql', 'postgres', 'mariadb'];
 
-$rp=realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR;
+    private $projectName;
+    private $gitUsername;
+    private $gitEmail;
+    private $phpVersion;
+    private $mysqlVersion;
+    private $postgresVersion;
+    private $dbType;
+    private $outputDir;
+    private $rootPath;
 
-if ($argc<4) {
-	echo COLORS['RED'].'Missing arguments.'.COLORS['NONE'].NL;
-	echo 'Usage: php project.php <project-name> <git-username> <git-email>'.NL;
-	echo 'Example: php project.php my-project username username@domain.tld'.NL;
-	exit(1);
+    public function __construct($options)
+    {
+        $this->rootPath = realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR;
+        $this->setOptions($options);
+        $this->validateInputs();
+        $this->setOutputDir();
+    }
+
+    private function setOptions($options)
+    {
+        $this->projectName = $options['project-name']??null;
+        $this->gitUsername = $options['git-username']??null;
+        $this->gitEmail = $options['git-email']??null;
+        $this->phpVersion = $options['php-version']??'8.3';
+        $this->postgresVersion = $options['postgres-version']??'16.3';
+        $this->mysqlVersion = $options['mysql-version']??'8.4';
+        $this->mariadbVersion = $options['mariadb-version']??'11.4';
+        $this->dbType = $options['db-type']??'mariadb';
+        $this->outputDir = $options['output-dir']??$this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR;
+    }
+
+    private function validateInputs()
+    {
+        if (empty($this->projectName) || empty($this->gitUsername) || empty($this->gitEmail)) {
+            $this->printError('Missing arguments.');
+            $this->printUsage();
+            exit(1);
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $this->projectName)) {
+            $this->printError('Invalid project name. [a-zA-Z0-9-_.]');
+            exit(1);
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $this->gitUsername)) {
+            $this->printError('Invalid git username. [a-zA-Z0-9-_.]');
+            exit(1);
+        }
+
+        if (!filter_var($this->gitEmail, FILTER_VALIDATE_EMAIL)) {
+            $this->printError('Invalid git email.');
+            exit(1);
+        }
+
+        if (!in_array($this->dbType, self::DB_TYPES)) {
+            $this->printError('Invalid database type. [mysql, postgres, mariadb]');
+            exit(1);
+        }
+    }
+
+    private function setOutputDir()
+    {
+        if (!is_dir($this->outputDir)) {
+            mkdir($this->outputDir, 0777, true);
+        }
+
+        if (substr($this->outputDir, -1) !== DIRECTORY_SEPARATOR) {
+            $this->outputDir .= DIRECTORY_SEPARATOR;
+        }
+    }
+
+    public function createProject()
+    {
+        $this->createGitattributes();
+        $this->createDockerCompose();
+        $this->createReadme();
+        $this->createDockerFiles();
+        $this->createScripts();
+        $this->printSuccess($this->projectName.' created.');
+    }
+
+    private function createGitattributes()
+    {
+        $content = [];
+        $content[] = '*.css text eol=lf';
+        $content[] = '*.htaccess text eol=lf';
+        $content[] = '*.htm text eol=lf';
+        $content[] = '*.html text eol=lf';
+        $content[] = '*.js text eol=lf';
+        $content[] = '*.json text eol=lf';
+        $content[] = '*.map text eol=lf';
+        $content[] = '*.md text eol=lf';
+        $content[] = '*.php text eol=lf';
+        $content[] = '*.profile text eol=lf';
+        $content[] = '*.script text eol=lf';
+        $content[] = '*.sh text eol=lf';
+        $content[] = '*.svg text eol=lf';
+        $content[] = '*.txt text eol=lf';
+        $content[] = '*.xml text eol=lf';
+        $content[] = '*.yml text eol=lf';
+
+        file_put_contents($this->outputDir.'.gitattributes', implode(PHP_EOL, $content));
+        chmod($this->outputDir.'.gitattributes', 0777);
+    }
+
+    private function createDockerCompose()
+    {
+        $content = [];
+        $content[] = 'services:';
+        $content[] = '    web:';
+        $content[] = '        build: ./docker/web';
+        $content[] = '        working_dir: /app';
+        $content[] = '        user: application';
+        $content[] = '        ports:';
+        $content[] = '            - "80:80"';
+        $content[] = '            - "443:443"';
+        $content[] = '        volumes:';
+        $content[] = '            - ./:/app';
+        $content[] = '        tmpfs:';
+        $content[] = '          - /tmp:mode=1777';
+        $content[] = '        environment:';
+        $content[] = '          - WEB_DOCUMENT_ROOT=/app/public';
+        $content[] = '          - PHP_DISPLAY_ERRORS=1';
+        $content[] = '          - PHP_MEMORY_LIMIT=512M';
+        $content[] = '          - PHP_MAX_EXECUTION_TIME=300';
+        $content[] = '          - PHP_POST_MAX_SIZE=200M';
+        $content[] = '          - PHP_UPLOAD_MAX_FILESIZE=100M';
+        if ($this->dbType === 'mysql') {
+            $content[] = '    db:';
+            $content[] = '        image: mysql:'.$this->mysqlVersion;
+            $content[] = '        environment:';
+            $content[] = '            MYSQL_ROOT_PASSWORD: root';
+            $content[] = '            MYSQL_DATABASE: my_database';
+            $content[] = '            MYSQL_USER: my_user';
+            $content[] = '            MYSQL_PASSWORD: my_password';
+            $content[] = '        volumes:';
+            $content[] = '            - ./docker/mysql:/docker-entrypoint-initdb.d';
+            $content[] = '            - ./docker/mysql/data:/var/lib/mysql';
+            $content[] = '        ports:';
+            $content[] = '            - "3306:3306"';
+        } elseif ($this->dbType === 'postgres') {
+            $content[] = '    db:';
+            $content[] = '        image: postgres:'.$this->postgresVersion;
+            $content[] = '        environment:';
+            $content[] = '            POSTGRES_DB: my_database';
+            $content[] = '            POSTGRES_USER: my_user';
+            $content[] = '            POSTGRES_PASSWORD: my_password';
+            $content[] = '        volumes:';
+            $content[] = '            - ./docker/postgres:/docker-entrypoint-initdb.d';
+            $content[] = '            - ./docker/postgres/data:/var/lib/postgresql/data';
+            $content[] = '        ports:';
+            $content[] = '            - "5432:5432"';
+        } elseif ($this->dbType === 'mariadb') {
+            $content[] = '    db:';
+            $content[] = '        image: mariadb:'.$this->mariadbVersion;
+            $content[] = '        environment:';
+            $content[] = '            MYSQL_ROOT_PASSWORD: root';
+            $content[] = '            MYSQL_DATABASE: my_database';
+            $content[] = '            MYSQL_USER: my_user';
+            $content[] = '            MYSQL_PASSWORD: my_password';
+            $content[] = '        volumes:';
+            $content[] = '            - ./docker/mariadb:/docker-entrypoint-initdb.d';
+            $content[] = '            - ./docker/mariadb/data:/var/lib/mysql';
+            $content[] = '        ports:';
+            $content[] = '            - "3306:3306"';
+        }
+
+        file_put_contents($this->outputDir.'docker-compose.yml', implode(PHP_EOL, $content));
+        chmod($this->outputDir.'docker-compose.yml', 0777);
+    }
+
+    private function createReadme()
+    {
+        $content = [];
+        $content[] = '# '.$this->projectName;
+        $content[] = '';
+        $content[] = '### Setup Docker';
+        $content[] = 'run `docker compose up` to build and run the container';
+        $content[] = '';
+        $content[] = '### Setup Symfony';
+        $content[] = '- run `docker/bash.sh` to get into the container';
+        $content[] = '';
+        $content[] = '#### inside the container run';
+        $content[] = '- `composer create-project symfony/skeleton:"6.*" apptemp` to create a new symfony project';
+        $content[] = '- `mv /app/apptemp/* /app/` to move the files from the temp folder to the root folder';
+        $content[] = '- `find /app/apptemp/ -name ".*" ! -name . ! -name .. -exec mv {} /app/ \;` to move the hidden files from the temp folder to the root folder';
+        $content[] = '- `rm -R /app/apptemp` to remove the temp folder';
+        $content[] = '';
+        $content[] = '#### mariadb|postgres|mysql setup';
+        $content[] = '- run `echo "/docker/mariadb/" >> .gitignore` to ignore the mariadb folder';
+        $content[] = '- run `echo "/docker/postgres/" >> .gitignore` to ignore the postgres folder';
+        $content[] = '- run `echo "/docker/mysql/" >> .gitignore` to ignore the mysql folder';
+        $content[] = '- run `echo "/.idea/" >> .gitignore` to ignore the idea folder';
+        $content[] = '';
+        $content[] = '#### inside the container setup symfony';
+        $content[] = '- `composer require webapp` to install the webapp bundle';
+        $content[] = '- `composer require symfony/apache-pack` to install the apache pack';
+
+        file_put_contents($this->outputDir.'README.md', implode(PHP_EOL, $content));
+        chmod($this->outputDir.'README.md', 0777);
+    }
+
+    private function createDockerFiles()
+    {
+        $webDir = $this->outputDir.'docker'.DIRECTORY_SEPARATOR.'web'.DIRECTORY_SEPARATOR;
+        if (!is_dir($webDir)) {
+            mkdir($webDir, 0777, true);
+        }
+
+        $content = [];
+        $content[] = 'FROM webdevops/php-apache-dev:'.$this->phpVersion;
+        $content[] = '';
+        $content[] = '# Update and install';
+        $content[] = 'RUN apt-get update && apt-get install -y';
+        $content[] = '';
+        $content[] = '#Nano';
+        $content[] = 'RUN apt-get install -y nano';
+        $content[] = '';
+        $content[] = '#Keyring';
+        $content[] = 'RUN mkdir -p /etc/apt/keyrings';
+        $content[] = '';
+        $content[] = '# Node.js';
+        $content[] = 'RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg';
+        $content[] = 'RUN NODE_MAJOR=18 && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list';
+        $content[] = '';
+        $content[] = '# Yarn';
+        $content[] = 'RUN curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor |  tee /usr/share/keyrings/yarnkey.gpg >/dev/null 2>&1';
+        $content[] = 'RUN echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" |  tee /etc/apt/sources.list.d/yarn.list >/dev/null 2>&1';
+        $content[] = 'RUN apt-get update && apt-get install -y yarn';
+        $content[] = '';
+        $content[] = '# Symfony CLI';
+        $content[] = 'RUN curl -1sLf \'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh\' | bash';
+        $content[] = 'RUN apt-get update && apt-get install -y symfony-cli';
+        $content[] = '';
+        $content[] = '# Git config';
+        $content[] = 'USER application';
+        $content[] = 'RUN git config --global user.email "'.$this->gitEmail.'"';
+        $content[] = 'RUN git config --global user.name "'.$this->gitUsername.'"';
+
+        file_put_contents($webDir.'Dockerfile', implode(PHP_EOL, $content));
+        chmod($webDir.'Dockerfile', 0777);
+    }
+
+    private function createScripts()
+    {
+        $this->createScript(
+            'bash.bat',
+            'docker exec --user=application -it -w /app '.$this->projectName.'-web-1 bash'
+        );
+        $this->createScript(
+            'bash.sh',
+            '#!/bin/bash\ndocker exec --user=application -it -w /app '.$this->projectName.'-web-1 bash'
+        );
+        $this->createScript(
+            'root.bat',
+            'docker exec --user=root -it -w /app '.$this->projectName.'-web-1 bash'
+        );
+        $this->createScript(
+            'root.sh',
+            '#!/bin/bash\ndocker exec --user=root -it -w /app '.$this->projectName.'-web-1 bash'
+        );
+    }
+
+    private function createScript($filename, $content)
+    {
+        file_put_contents($this->outputDir.'docker'.DIRECTORY_SEPARATOR.$filename, $content);
+        chmod($this->outputDir.'docker'.DIRECTORY_SEPARATOR.$filename, 0777);
+    }
+
+    private function printError($message)
+    {
+        echo self::COLORS['RED'].$message.self::COLORS['NONE'].self::NL;
+    }
+
+    private function printSuccess($message)
+    {
+        echo self::COLORS['GREEN'].$message.self::COLORS['NONE'].self::NL;
+    }
+
+    private function printUsage()
+    {
+        echo 'Usage: php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mysql-version=<mysql-version>] [--output-dir=<output-dir>]'.self::NL;
+        echo 'Example: php project.php --project-name=my-project --git-username=username --git-email=username@domain.tld'.self::NL;
+    }
 }
 
-$project_name = $argv[1];
-$git_username = $argv[2];
-$git_email = $argv[3];
-if (isset($argv[4])) {
-	$php_version = $argv[4];
-} else {
-	$php_version = '8.2';
-}
-if (isset($argv[5])) {
-	$mysql_version = $argv[5];
-} else {
-	$mysql_version = '11.3';
-}
+$options = getopt('', [
+    'project-name:',
+    'git-username:',
+    'git-email:',
+    'php-version::',
+    'mysql-version::',
+    'output-dir::',
+]);
 
-
-
-$o=$rp.'output'.DIRECTORY_SEPARATOR.$argv[1].DIRECTORY_SEPARATOR;
-
-if (isset($argv[6])) {
-    $o=$argv[6];
+foreach ($options as $key => $value) {
+    $options[$key] = trim($value);
 }
 
-if (!is_dir($o)) {
-    mkdir($o, 0777, true);
-}
-
-if (substr($o, -1) !== DIRECTORY_SEPARATOR) {
-    $o .= DIRECTORY_SEPARATOR;
-}
-
-if (preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $project_name) === 0) {
-	echo COLORS['RED'].'Invalid project name. [a-zA-Z0-9-_.]'.COLORS['NONE'].NL;
-	exit(1);
-}
-
-if (preg_match('/^[a-zA-Z0-9\-\_\.]+$/', $git_username) === 0) {
-	echo COLORS['RED'].'Invalid git username. [a-zA-Z0-9-_.]'.COLORS['NONE'].NL;
-	exit(1);
-}
-
-if (filter_var($git_email, FILTER_VALIDATE_EMAIL) === false) {
-	echo COLORS['RED'].'Invalid git email.'.COLORS['NONE'].NL;
-	exit(1);
-}
-
-file_put_contents($o.'.gitattributes', <<<EOF
-*.css text eol=lf
-*.htaccess text eol=lf
-*.htm text eol=lf
-*.html text eol=lf
-*.js text eol=lf
-*.json text eol=lf
-*.map text eol=lf
-*.md text eol=lf
-*.php text eol=lf
-*.profile text eol=lf
-*.script text eol=lf
-*.sh text eol=lf
-*.svg text eol=lf
-*.txt text eol=lf
-*.xml text eol=lf
-*.yml text eol=lf
-EOF
-);
-chmod($o.'.gitattributes', 0777);
-
-file_put_contents($o.'docker-compose.yml', <<<EOF
-version: "3.9"
-services:
-    web:
-        build: ./docker/web
-        working_dir: /app
-        user: application
-        ports:
-            - "80:80"
-            - "443:443"
-        volumes:
-            - ./:/app
-        tmpfs:
-          - /tmp:mode=1777
-        environment:
-          - WEB_DOCUMENT_ROOT=/app/public
-          - PHP_DISPLAY_ERRORS=1
-          - PHP_MEMORY_LIMIT=512M
-          - PHP_MAX_EXECUTION_TIME=300
-          - PHP_POST_MAX_SIZE=200M
-          - PHP_UPLOAD_MAX_FILESIZE=100M
-    mariadb:
-        image: mariadb:{$mysql_version}
-        environment:
-            MYSQL_ROOT_PASSWORD: root
-            MYSQL_DATABASE: my_database
-            MYSQL_USER: my_user
-            MYSQL_PASSWORD: my_password
-        volumes:
-            - ./docker/mariadb:/docker-entrypoint-initdb.d
-            - ./docker/mariadb/data:/var/lib/mysql
-        ports:
-            - "3306:3306"
-EOF
-);
-chmod($o.'docker-compose.yml', 0777);
-
-file_put_contents($o.'README.md', <<<EOF
-# {$project_name}
-
-### Setup Docker
-run `docker compose up` to build and run the container
-
-### Setup Symfony
-- run `docker/bash.sh` to get into the container
-
-#### inside the container run
-- `composer create-project symfony/skeleton:"6.*" apptemp` to create a new symfony project
-- `mv /app/apptemp/* /app/` to move the files from the temp folder to the root folder
-- `find /app/apptemp/ -name ".*" ! -name . ! -name .. -exec mv {} /app/ \;` to move the hidden files from the temp folder to the root folder
-- `rm -R /app/apptemp` to remove the temp folder
-
-#### mariadb gitignore
-- run `echo "/docker/mariadb/" >> .gitignore` to ignore the mariadb folder
-- run `echo "/.idea/" >> .gitignore` to ignore the idea folder
-
-#### inside the container setup symfony
-- `composer require webapp` to install the webapp bundle
-- `composer require symfony/apache-pack` to install the apache pack
-EOF
-);
-chmod($o.'README.md', 0777);
-
-if (!is_dir($o.'docker'.DIRECTORY_SEPARATOR.'web'.DIRECTORY_SEPARATOR)) {
-	mkdir($o.'docker'.DIRECTORY_SEPARATOR.'web'.DIRECTORY_SEPARATOR, 0777, true);
-}
-file_put_contents($o.'docker'.DIRECTORY_SEPARATOR.'web'.DIRECTORY_SEPARATOR.'Dockerfile', <<<EOF
-FROM webdevops/php-apache-dev:{$php_version}
-
-# Update and install
-RUN apt-get update && apt-get install -y
-
-#Nano
-RUN apt-get install -y nano
-
-#Keyring
-RUN mkdir -p /etc/apt/keyrings
-
-# Node.js
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN NODE_MAJOR=18 && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_\$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-
-# Yarn
-RUN curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor |  tee /usr/share/keyrings/yarnkey.gpg >/dev/null 2>&1
-RUN echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" |  tee /etc/apt/sources.list.d/yarn.list >/dev/null 2>&1
-RUN apt-get update && apt-get install -y yarn
-
-# Symfony CLI
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash
-RUN apt-get update && apt-get install -y symfony-cli
-
-# Git config
-USER application
-RUN git config --global user.email "{$git_email}"
-RUN git config --global user.name "{$git_username}"
-EOF
-);
-chmod($o.'docker'.DIRECTORY_SEPARATOR.'web'.DIRECTORY_SEPARATOR.'Dockerfile', 0777);
-
-file_put_contents($o.'docker'.DIRECTORY_SEPARATOR.'bash.bat', <<<EOF
-docker exec --user=application -it -w /app {$project_name}-web-1 bash
-EOF
-);
-chmod($o.'docker'.DIRECTORY_SEPARATOR.'bash.bat', 0777);
-
-file_put_contents($o.'docker'.DIRECTORY_SEPARATOR.'bash.sh', <<<EOF
-#!/bin/bash
-docker exec --user=application -it -w /app {$project_name}-web-1 bash
-EOF
-);
-chmod($o.'docker'.DIRECTORY_SEPARATOR.'bash.sh', 0777);
-
-file_put_contents($o.'docker'.DIRECTORY_SEPARATOR.'root.bat', <<<EOF
-docker exec --user=root -it -w /app {$project_name}-web-1 bash
-EOF
-);
-chmod($o.'docker'.DIRECTORY_SEPARATOR.'root.bat', 0777);
-
-file_put_contents($o.'docker'.DIRECTORY_SEPARATOR.'root.sh', <<<EOF
-#!/bin/bash
-docker exec --user=root -it -w /app {$project_name}-web-1 bash
-EOF
-);
-chmod($o.'docker'.DIRECTORY_SEPARATOR.'root.sh', 0777);
-
-echo COLORS['GREEN'].$project_name.' created.'.COLORS['NONE'].NL;
-exit(1);
+$projectSetup = new ProjectSetup($options);
+$projectSetup->createProject();
 
 ?>
