@@ -76,9 +76,6 @@ if [ -z "$PROJECT_NAME" ] || [ -z "$GIT_USERNAME" ] || [ -z "$GIT_EMAIL" ]; then
     exit 1
 fi
 
-PHP_VERSION=${PHP_VERSION:-$(php -v | grep -oP '^PHP \K[^\s]+')}
-MARIADB_VERSION=${MARIADB_VERSION:-"system default"}
-
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-php "$SCRIPT_DIR/project-symfony.php" --project-name="$options['project-name']" --git-username="$options['git-username']" --git-email="$options['git-email']" --php-version="$options['php-version']" --mariadb_version="$options['mariadb-version']" --postgres-version="$options['postgres-version']" --mysql-version="$options['mysql-version']" --db-type="$options['db-type']" --output-dir="$options['output-dir']"
+php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --db-type="$DB_TYPE"
