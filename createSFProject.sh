@@ -10,11 +10,14 @@ OPTIONS
     -project_name     Name of the project.
     -git_username     Git username.
     -git_email        Git email.
-    -php_version      Optional. PHP version for the project (default: system wide version).
-    -mariadb_version  Optional. MariaDB version for the project (default: system wide version).
+    -php_version      Optional. PHP version for the project (default: 8.3).
+    -mariadb_version  Optional. MariaDB version for the project (default: 11.4).
+    -postgres_version Optional. Postgress version for the project (default: 16.3).
+    -mysql_version    Optional. MySQL version for the project (default: 8.4).
+    -db-type          Optional. Database type for the project (default: mysql).
 
 EXAMPLES
-    ${0##*/} -project_name=myproject -git_username=myusername -git_email=myemail -php_version=8.2 -mariadb_version=10.4
+    ${0##*/} -project_name=myproject -git_username=myusername -git_email=myemail@mydomain.tld -php_version=8.3 -mariadb_version=11.4 -postgres_version=16.4 -mysql_version=8.4 -db-type=mysql
 EOF
 }
 
@@ -49,6 +52,18 @@ case $i in
     MARIADB_VERSION="${i#*=}"
     shift
     ;;
+    -postgres_version=*)
+    POSTGRES_VERSION="${i#*=}"
+    shift
+    ;;
+    -mysql_version=*)
+    MYSQL_VERSION="${i#*=}"
+    shift
+    ;;
+    -db-type=*)
+    DB_TYPE="${i#*=}"
+    shift
+    ;;
     *)
     ;;
 esac
@@ -65,4 +80,5 @@ PHP_VERSION=${PHP_VERSION:-$(php -v | grep -oP '^PHP \K[^\s]+')}
 MARIADB_VERSION=${MARIADB_VERSION:-"system default"}
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-php "$SCRIPT_DIR/project-symfony.php" $PROJECT_NAME $GIT_USERNAME $GIT_EMAIL $PHP_VERSION $MARIADB_VERSION "$PWD"
+
+php "$SCRIPT_DIR/project-symfony.php" --project-name="$options['project-name']" --git-username="$options['git-username']" --git-email="$options['git-email']" --php-version="$options['php-version']" --mariadb_version="$options['mariadb-version']" --postgres-version="$options['postgres-version']" --mysql-version="$options['mysql-version']" --db-type="$options['db-type']" --output-dir="$options['output-dir']"
