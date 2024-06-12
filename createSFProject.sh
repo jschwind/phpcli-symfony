@@ -78,4 +78,4 @@ fi
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --db-type="$DB_TYPE"
+php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --db-type="$DB_TYPE" --output-dir="$SCRIPT_DIR"
