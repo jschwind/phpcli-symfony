@@ -2,19 +2,20 @@
 
 class ProjectSetup
 {
-    const COLORS = ['GREEN'=>"\033[32m", 'RED'=>"\033[31m", 'NONE'=>"\033[0m",];
+    const COLORS = ['GREEN' => "\033[32m", 'RED' => "\033[31m", 'NONE' => "\033[0m",];
     const NL = "\n";
     const DB_TYPES = ['mysql', 'postgres', 'mariadb'];
 
-    private $projectName;
-    private $gitUsername;
-    private $gitEmail;
-    private $phpVersion;
-    private $mysqlVersion;
-    private $postgresVersion;
-    private $dbType;
-    private $outputDir;
-    private $rootPath;
+    private ?string $projectName;
+    private ?string $gitUsername;
+    private ?string $gitEmail;
+    private string $phpVersion;
+    private string $mysqlVersion;
+    private string $postgresVersion;
+    private string $dbType;
+    private string $outputDir;
+    private string $rootPath;
+    private bool $isSH;
 
     public function __construct($options)
     {
@@ -26,15 +27,16 @@ class ProjectSetup
 
     private function setOptions($options)
     {
-        $this->projectName = $options['project-name']??null;
-        $this->gitUsername = $options['git-username']??null;
-        $this->gitEmail = $options['git-email']??null;
-        $this->phpVersion = $options['php-version']??'8.3';
-        $this->postgresVersion = $options['postgres-version']??'16.3';
-        $this->mysqlVersion = $options['mysql-version']??'8.4';
-        $this->mariadbVersion = $options['mariadb-version']??'11.4';
-        $this->dbType = $options['db-type']??'mariadb';
-        $this->outputDir = $options['output-dir']??$this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR;
+        $this->projectName = (isset($options['project-name']) ? $options['project-name'] : null);
+        $this->gitUsername = (isset($options['git-username']) ? $options['git-username'] : null);
+        $this->gitEmail = (isset($options['git-email']) ? $options['git-email'] : null);
+        $this->phpVersion = (isset($options['php-version']) ? $options['php-version'] : '8.3');
+        $this->postgresVersion = (isset($options['postgres-version']) ? $options['postgres-version'] : '16.3');
+        $this->mysqlVersion = (isset($options['mysql-version']) ? $options['mysql-version'] : '8.4');
+        $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.4');
+        $this->dbType = (isset($options['db-type']) ? $options['db-type'] : 'mysql');
+        $this->outputDir = (isset($options['output-dir']) ? $options['output-dir'] : $this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR);
+        $this->isSH = (isset($options['is-sh']) ? (bool)$options['is-sh'] : false);
     }
 
     private function validateInputs()
@@ -287,8 +289,33 @@ class ProjectSetup
 
     private function printUsage()
     {
-        echo 'Usage: php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mysql-version=<mysql-version>] [--output-dir=<output-dir>]'.self::NL;
-        echo 'Example: php project.php --project-name=my-project --git-username=username --git-email=username@domain.tld'.self::NL;
+        echo self::NL;
+        echo 'Create a Symfony project with specific Git and optional version parameters.'.self::NL;
+        echo self::NL;
+        echo 'OPTIONS'.self::NL;
+        echo '    -project_name     Name of the project.'.self::NL;
+        echo '    -git_username     Git username.'.self::NL;
+        echo '    -git_email        Git email.'.self::NL;
+        echo '    -php_version      Optional. PHP version for the project (default: 8.3).'.self::NL;
+        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.4).'.self::NL;
+        echo '    -postgres_version Optional. Postgress version for the project (default: 16.3).'.self::NL;
+        echo '    -mysql_version    Optional. MySQL version for the project (default: 8.4).'.self::NL;
+        echo '    -db-type          Optional. Database type for the project (default: mysql).'.self::NL;
+        if ($this->isSH === true) {
+            echo self::NL;
+            echo 'USAGE'.self::NL;
+            echo '    createSFProject.sh -project_name=<project-name> -git_username=<git-username> -git_email=<git-email> [-php_version=<php-version>] [-maria_version=<mariadb-version>] [-postgres_version=<postgres-version>] [-mysql_version=<mysql-version>] [-db-type=<db-type>]'.self::NL;
+            echo self::NL;
+            echo 'EXAMPLE'.self::NL;
+            echo '    createSFProject.sh -project_name=myproject -git_username=myusername -git_email=myemail@mydomain.tld'.self::NL;
+        } else {
+            echo self::NL;
+            echo 'USAGE'.self::NL;
+            echo '    php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mariadb-version=<mariadb-version>] [--postgres-version=<postgres-version>] [--mysql-version=<mysql-version>] [--db-type=<db-type>]'.self::NL;
+            echo self::NL;
+            echo 'EXAMPLE'.self::NL;
+            echo '    php project.php --project-name=my-project --git-username=username --git-email=username@domain.tld'.self::NL;
+        }
     }
 }
 
@@ -299,6 +326,7 @@ $options = getopt('', [
     'php-version::',
     'mysql-version::',
     'output-dir::',
+    'is-sh::',
 ]);
 
 foreach ($options as $key => $value) {

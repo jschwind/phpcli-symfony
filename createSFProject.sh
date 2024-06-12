@@ -1,37 +1,8 @@
 #!/bin/bash
 
-show_help() {
-cat << EOF
-Usage: ${0##*/} [OPTIONS]
-
-Create a Symfony project with specific Git and optional version parameters.
-
-OPTIONS
-    -project_name     Name of the project.
-    -git_username     Git username.
-    -git_email        Git email.
-    -php_version      Optional. PHP version for the project (default: 8.3).
-    -mariadb_version  Optional. MariaDB version for the project (default: 11.4).
-    -postgres_version Optional. Postgress version for the project (default: 16.3).
-    -mysql_version    Optional. MySQL version for the project (default: 8.4).
-    -db-type          Optional. Database type for the project (default: mysql).
-
-EXAMPLES
-    ${0##*/} -project_name=myproject -git_username=myusername -git_email=myemail@mydomain.tld -php_version=8.3 -mariadb_version=11.4 -postgres_version=16.4 -mysql_version=8.4 -db-type=mysql
-EOF
-}
-
 for i in "$@"
 do
 case $i in
-    -help)
-    show_help
-    exit 0
-    ;;
-    --help)
-      show_help
-      exit 0
-      ;;
     -project_name=*)
     PROJECT_NAME="${i#*=}"
     shift
@@ -69,13 +40,6 @@ case $i in
 esac
 done
 
-
-if [ -z "$PROJECT_NAME" ] || [ -z "$GIT_USERNAME" ] || [ -z "$GIT_EMAIL" ]; then
-    echo "Error: Missing required parameters."
-    show_help
-    exit 1
-fi
-
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --db-type="$DB_TYPE" --output-dir="$SCRIPT_DIR"
+php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --db-type="$DB_TYPE" --output-dir="$PWD" --is-sh="true"
