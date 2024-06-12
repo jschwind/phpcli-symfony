@@ -25,7 +25,7 @@ Create a Symfony project with specific Git and optional version parameters.
 * `-mariadb_version`: Optional. MariaDB version for the project (default: `11.4`).
 * `-postgres_version`: Optional. Postgress version for the project (default: `16.3`).
 * `-mysql_version`: Optional. MySQL version for the project (default: `8.4`).
-* `-db-type`: Optional. Database type for the project (default: `mysql`).
+* `-db-type`: Optional. Database type for the project (default: `mariadb`).
 
 ## EXAMPLES
 ```shell

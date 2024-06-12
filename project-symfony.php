@@ -34,7 +34,7 @@ class ProjectSetup
         $this->postgresVersion = (isset($options['postgres-version']) ? $options['postgres-version'] : '16.3');
         $this->mysqlVersion = (isset($options['mysql-version']) ? $options['mysql-version'] : '8.4');
         $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.4');
-        $this->dbType = (isset($options['db-type']) ? $options['db-type'] : 'mysql');
+        $this->dbType = (isset($options['db-type']) ? $options['db-type'] : 'mariadb');
         $this->outputDir = (isset($options['output-dir']) ? $options['output-dir'] : $this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR);
         $this->isSH = (isset($options['is-sh']) ? (bool)$options['is-sh'] : false);
     }
