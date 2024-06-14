@@ -259,7 +259,7 @@ class ProjectSetup
         );
         $this->createScript(
             'bash.sh',
-            '#!/bin/bash\ndocker exec --user=application -it -w /app '.$this->projectName.'-web-1 bash'
+            '#!/bin/bash'."\n".'docker exec --user=application -it -w /app '.$this->projectName.'-web-1 bash'
         );
         $this->createScript(
             'root.bat',
@@ -267,7 +267,7 @@ class ProjectSetup
         );
         $this->createScript(
             'root.sh',
-            '#!/bin/bash\ndocker exec --user=root -it -w /app '.$this->projectName.'-web-1 bash'
+            '#!/bin/bash'."\n".'docker exec --user=root -it -w /app '.$this->projectName.'-web-1 bash'
         );
     }
 
