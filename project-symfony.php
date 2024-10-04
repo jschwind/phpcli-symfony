@@ -191,7 +191,8 @@ class ProjectSetup
         $content[] = '- run `docker/bash.sh` to get into the container';
         $content[] = '';
         $content[] = '#### inside the container run';
-        $content[] = '- `composer create-project symfony/skeleton:"6.*" apptemp` to create a new symfony project';
+        $content[] = '- `composer create-project symfony/skeleton:"6.*" apptemp` to create a new symfony project for symfony 6';
+        $content[] = '- `composer create-project symfony/skeleton:"7.*" apptemp` to create a new symfony project for symfony 7';
         $content[] = '- `mv /app/apptemp/* /app/` to move the files from the temp folder to the root folder';
         $content[] = '- `find /app/apptemp/ -name ".*" ! -name . ! -name .. -exec mv {} /app/ \;` to move the hidden files from the temp folder to the root folder';
         $content[] = '- `rm -R /app/apptemp` to remove the temp folder';
@@ -203,8 +204,7 @@ class ProjectSetup
         $content[] = '- run `echo "/.idea/" >> .gitignore` to ignore the idea folder';
         $content[] = '';
         $content[] = '#### inside the container setup symfony';
-        $content[] = '- `composer require webapp` to install the webapp bundle';
-        $content[] = '- `composer require symfony/apache-pack` to install the apache pack';
+        $content[] = '- `composer require jbsnewmedia/symfony-web-pack` to install the webapp bundle';
 
         file_put_contents($this->outputDir.'README.md', implode(PHP_EOL, $content));
         chmod($this->outputDir.'README.md', 0777);
