@@ -18,17 +18,19 @@ createSFProject.sh [OPTIONS]
 Create a Symfony project with specific Git and optional version parameters.
 
 ## OPTIONS
-* `-project_name`: Name of the project.
-* `-git_username`: Git username.
-* `-git_email`: Git email.
-* `-php_version`: Optional. PHP version for the project (default: `8.3`).
-* `-mariadb_version`: Optional. MariaDB version for the project (default: `11.4`).
-* `-postgres_version`: Optional. Postgress version for the project (default: `16.3`).
-* `-mysql_version`: Optional. MySQL version for the project (default: `8.4`).
+* `-project-name`: Name of the project.
+* `-git-username`: Git username.
+* `-git-email`: Git email.
+* `-php-version`: Optional. PHP version for the project (default: `8.3`).
+* `-mariadb-version`: Optional. MariaDB version for the project (default: `11.6`).
+* `-postgres-version`: Optional. Postgress version for the project (default: `17.0`).
+* `-mysql-version`: Optional. MySQL version for the project (default: `9.1`).
+* `-firebird-version`: Optional. Firebird version for the project (default: `5.0`).
 * `-db-type`: Optional. Database type for the project (default: `mariadb`).
+* `-symfony-version`: Optional. Symfony version for the project (default: `7`).
 
 ## EXAMPLES
 ```shell
-createSFProject.sh -project_name=myproject -git_username=myusername -git_email=myemail@mydomain.tld -php_version=8.3 -mariadb_version=11.4 -postgres_version=16.4 -mysql_version=8.4 -db-type=mysql
+createSFProject.sh -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld -php-version=8.3 -mariadb-version=11.6 -postgres-version=17.0 -mysql-version=9.1 -firebird-version=5.0 -db-type=mariadb -symfony-version=7
 ```
 

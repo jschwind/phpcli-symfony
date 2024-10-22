@@ -4,7 +4,7 @@ class ProjectSetup
 {
     const COLORS = ['GREEN' => "\033[32m", 'RED' => "\033[31m", 'NONE' => "\033[0m",];
     const NL = "\n";
-    const DB_TYPES = ['mysql', 'postgres', 'mariadb'];
+    const DB_TYPES = ['mysql', 'postgres', 'mariadb', 'firebird'];
 
     private ?string $projectName;
     private ?string $gitUsername;
@@ -12,7 +12,10 @@ class ProjectSetup
     private string $phpVersion;
     private string $mysqlVersion;
     private string $postgresVersion;
+    private string $mariadbVersion;
+    private string $firebirdVersion;
     private string $dbType;
+    private string $symfonyVersion;
     private string $outputDir;
     private string $rootPath;
     private bool $isSH;
@@ -31,10 +34,12 @@ class ProjectSetup
         $this->gitUsername = (isset($options['git-username']) ? $options['git-username'] : null);
         $this->gitEmail = (isset($options['git-email']) ? $options['git-email'] : null);
         $this->phpVersion = (isset($options['php-version']) ? $options['php-version'] : '8.3');
-        $this->postgresVersion = (isset($options['postgres-version']) ? $options['postgres-version'] : '16.3');
-        $this->mysqlVersion = (isset($options['mysql-version']) ? $options['mysql-version'] : '8.4');
-        $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.4');
+        $this->postgresVersion = (isset($options['postgres-version']) ? $options['postgres-version'] : '17.0');
+        $this->mysqlVersion = (isset($options['mysql-version']) ? $options['mysql-version'] : '9.1');
+        $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.6');
+        $this->firebirdVersion = (isset($options['firebird-version']) ? $options['firebird-version'] : '5.0');
         $this->dbType = (isset($options['db-type']) ? $options['db-type'] : 'mariadb');
+        $this->symfonyVersion = (isset($options['symfony-version']) ? $options['symfony-version'] : '7.*');
         $this->outputDir = (isset($options['output-dir']) ? $options['output-dir'] : $this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR);
         $this->isSH = (isset($options['is-sh']) ? (bool)$options['is-sh'] : false);
     }
@@ -173,6 +178,17 @@ class ProjectSetup
             $content[] = '            - ./docker/mariadb/data:/var/lib/mysql';
             $content[] = '        ports:';
             $content[] = '            - "3306:3306"';
+        } elseif ($this->dbType === 'firebird') {
+            $content[] = '    db:';
+            $content[] = '        image: jacobalberty/firebird:'.$this->firebirdVersion;
+            $content[] = '        environment:';
+            $content[] = '            ISC_PASSWORD: masterkey';
+            $content[] = '            FIREBIRD_DATABASE: my_database.fdb';
+            $content[] = '            TZ: Europe/Berlin';
+            $content[] = '        volumes:';
+            $content[] = '            - ./docker/firebird/data:/firebird/data';
+            $content[] = '        ports:';
+            $content[] = '            - "3050:3050"';
         }
 
         file_put_contents($this->outputDir.'docker-compose.yml', implode(PHP_EOL, $content));
@@ -191,20 +207,48 @@ class ProjectSetup
         $content[] = '- run `docker/bash.sh` to get into the container';
         $content[] = '';
         $content[] = '#### inside the container run';
-        $content[] = '- `composer create-project symfony/skeleton:"6.*" apptemp` to create a new symfony project for symfony 6';
-        $content[] = '- `composer create-project symfony/skeleton:"7.*" apptemp` to create a new symfony project for symfony 7';
+
+        $content[] = '- `composer create-project symfony/skeleton:"'.$this->symfonyVersion.'" apptemp` to create the symfony project';
         $content[] = '- `mv /app/apptemp/* /app/` to move the files from the temp folder to the root folder';
         $content[] = '- `find /app/apptemp/ -name ".*" ! -name . ! -name .. -exec mv {} /app/ \;` to move the hidden files from the temp folder to the root folder';
         $content[] = '- `rm -R /app/apptemp` to remove the temp folder';
         $content[] = '';
         $content[] = '#### mariadb|postgres|mysql setup';
-        $content[] = '- run `echo "/docker/mariadb/" >> .gitignore` to ignore the mariadb folder';
-        $content[] = '- run `echo "/docker/postgres/" >> .gitignore` to ignore the postgres folder';
-        $content[] = '- run `echo "/docker/mysql/" >> .gitignore` to ignore the mysql folder';
+        if ($this->dbType === 'mariadb') {
+            $content[] = '- run `echo "/docker/mariadb/" >> .gitignore` to ignore the mariadb folder';
+        } elseif ($this->dbType === 'postgres') {
+            $content[] = '- run `echo "/docker/postgres/" >> .gitignore` to ignore the postgres folder';
+        } elseif ($this->dbType === 'mysql') {
+            $content[] = '- run `echo "/docker/mysql/" >> .gitignore` to ignore the mysql folder';
+        } elseif ($this->dbType === 'firebird') {
+            $content[] = '- run `echo "/docker/firebird/" >> .gitignore` to ignore the firebird folder';
+        }
         $content[] = '- run `echo "/.idea/" >> .gitignore` to ignore the idea folder';
         $content[] = '';
         $content[] = '#### inside the container setup symfony';
         $content[] = '- `composer require jbsnewmedia/symfony-web-pack` to install the webapp bundle';
+
+        if ($this->dbType==='firebird') {
+            $content[] = '';
+            $content[] = '### Doctrine Firebird';
+            $content[] = '';
+            $content[] = '#### config/packages/doctrine.yaml';
+            $content[] = '```yaml';
+            $content[] = 'doctrine:';
+            $content[] = '    dbal:';
+            $content[] = '        default_connection: default';
+            $content[] = '        connections:';
+            $content[] = '            default:';
+            $content[] = '                driver_class: Satag\DoctrineFirebirdDriver\Driver\Firebird\Driver';
+            $content[] = '                host: db';
+            $content[] = '                port: 3050';
+            $content[] = '                dbname: my_database.fdb';
+            $content[] = '                user: sysdba';
+            $content[] = '                password: masterkey';
+            $content[] = '                charset: UTF-8';
+            $content[] = '            profiling_collect_backtrace: \'%kernel.debug%\'';
+            $content[] = '```';
+        }
 
         file_put_contents($this->outputDir.'README.md', implode(PHP_EOL, $content));
         chmod($this->outputDir.'README.md', 0777);
@@ -242,6 +286,10 @@ class ProjectSetup
         $content[] = 'RUN curl -1sLf \'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh\' | bash';
         $content[] = 'RUN apt-get update && apt-get install -y symfony-cli';
         $content[] = '';
+        if ($this->dbType==='firebird') {
+            $content[] = 'RUN apt-get install -y firebird-dev firebird3.0-utils && docker-php-source extract && git clone --branch v3.0.1 --depth 1 https://github.com/FirebirdSQL/php-firebird.git /usr/src/php/ext/interbase && docker-php-ext-install interbase';
+            $content[] = '';
+        }
         $content[] = '# Git config';
         $content[] = 'USER application';
         $content[] = 'RUN git config --global user.email "'.$this->gitEmail.'"';
@@ -297,21 +345,23 @@ class ProjectSetup
         echo '    -git_username     Git username.'.self::NL;
         echo '    -git_email        Git email.'.self::NL;
         echo '    -php_version      Optional. PHP version for the project (default: 8.3).'.self::NL;
-        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.4).'.self::NL;
-        echo '    -postgres_version Optional. Postgress version for the project (default: 16.3).'.self::NL;
-        echo '    -mysql_version    Optional. MySQL version for the project (default: 8.4).'.self::NL;
+        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.6).'.self::NL;
+        echo '    -postgres_version Optional. Postgress version for the project (default: 17.0).'.self::NL;
+        echo '    -mysql_version    Optional. MySQL version for the project (default: 9.1).'.self::NL;
+        echo '    -firebird_version Optional. Firebird version for the project (default: 5.0).'.self::NL;
         echo '    -db-type          Optional. Database type for the project (default: mysql).'.self::NL;
+        echo '    -symfony-version  Optional. Symfony version for the project (default: 7).'.self::NL;
         if ($this->isSH === true) {
             echo self::NL;
             echo 'USAGE'.self::NL;
-            echo '    createSFProject.sh -project_name=<project-name> -git_username=<git-username> -git_email=<git-email> [-php_version=<php-version>] [-maria_version=<mariadb-version>] [-postgres_version=<postgres-version>] [-mysql_version=<mysql-version>] [-db-type=<db-type>]'.self::NL;
+            echo '    createSFProject.sh -project-name=<project-name> -git-username=<git-username> -git-email=<git-email> [-php-version=<php-version>] [-maria-version=<mariadb-version>] [-postgres-version=<postgres-version>] [-mysql-version=<mysql-version>] [-firebird-version=<firebird-version>] [-db-type=<db-type>] [-symfony-version=<symfony-version>]'.self::NL;
             echo self::NL;
             echo 'EXAMPLE'.self::NL;
-            echo '    createSFProject.sh -project_name=myproject -git_username=myusername -git_email=myemail@mydomain.tld'.self::NL;
+            echo '    createSFProject.sh -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld'.self::NL;
         } else {
             echo self::NL;
             echo 'USAGE'.self::NL;
-            echo '    php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mariadb-version=<mariadb-version>] [--postgres-version=<postgres-version>] [--mysql-version=<mysql-version>] [--db-type=<db-type>]'.self::NL;
+            echo '    php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mariadb-version=<mariadb-version>] [--postgres-version=<postgres-version>] [--mysql-version=<mysql-version>] [--firebird-version=<firebird-version>] [--db-type=<db-type>] [--symfony-version=<symfony-version>]'.self::NL;
             echo self::NL;
             echo 'EXAMPLE'.self::NL;
             echo '    php project.php --project-name=my-project --git-username=username --git-email=username@domain.tld'.self::NL;
@@ -325,6 +375,11 @@ $options = getopt('', [
     'git-email:',
     'php-version::',
     'mysql-version::',
+    'postgres-version::',
+    'mariadb-version::',
+    'firebird-version::',
+    'db-type::',
+    'symfony-version::',
     'output-dir::',
     'is-sh::',
 ]);

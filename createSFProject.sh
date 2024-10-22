@@ -1,38 +1,57 @@
 #!/bin/bash
 
+PROJECT_NAME=""
+GIT_USERNAME=""
+GIT_EMAIL=""
+PHP_VERSION=""
+MARIADB_VERSION=""
+POSTGRES_VERSION=""
+MYSQL_VERSION=""
+FIREBIRD_VERSION=""
+DB_TYPE=""
+SF_VERSION=""
+
 for i in "$@"
 do
 case $i in
-    -project_name=*)
+    -project-name=*)
     PROJECT_NAME="${i#*=}"
     shift
     ;;
-    -git_username=*)
+    -git-username=*)
     GIT_USERNAME="${i#*=}"
     shift
     ;;
-    -git_email=*)
+    -git-email=*)
     GIT_EMAIL="${i#*=}"
     shift
     ;;
-    -php_version=*)
+    -php-version=*)
     PHP_VERSION="${i#*=}"
     shift
     ;;
-    -mariadb_version=*)
+    -mariadb-version=*)
     MARIADB_VERSION="${i#*=}"
     shift
     ;;
-    -postgres_version=*)
+    -postgres-version=*)
     POSTGRES_VERSION="${i#*=}"
     shift
     ;;
-    -mysql_version=*)
+    -mysql-version=*)
     MYSQL_VERSION="${i#*=}"
+    shift
+    ;;
+    -firebird-version=*)
+    FIREBIRD_VERSION="${i#*=}"
     shift
     ;;
     -db-type=*)
     DB_TYPE="${i#*=}"
+    shift
+    ;;
+    -symfony-version=*)
+    SF_VERSION="${i#*=}"
     shift
     ;;
     *)
@@ -42,4 +61,4 @@ done
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --db-type="$DB_TYPE" --output-dir="$PWD" --is-sh="true"
+php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --firebird-version="$FIREBIRD_VERSION" --db-type="$DB_TYPE" --symfony-version="$SF_VERSION" --output-dir="$PWD" --is-sh="true"
