@@ -1,4 +1,4 @@
-## create a docker for a symfony project
+# Create a Docker environment for a Symfony project.
 
 ## Installation
 ```shell
@@ -11,13 +11,13 @@ createSFProject.sh to PATH Variable or create a link, e.g. Arch/Manjaro Linux: ~
 sudo ln -s $(pwd)/createSFProject.sh /usr/local/bin
 ```
 
-## Usage:
+## Usage
 
 createSFProject.sh [OPTIONS]
 
 Create a Symfony project with specific Git and optional version parameters.
 
-## OPTIONS
+### Options
 * `-project-name`: Name of the project.
 * `-git-username`: Git username.
 * `-git-email`: Git email.
@@ -29,7 +29,8 @@ Create a Symfony project with specific Git and optional version parameters.
 * `-db-type`: Optional. Database type for the project (default: `mariadb`).
 * `-symfony-version`: Optional. Symfony version for the project (default: `7`).
 
-## EXAMPLES
+## Examples
+
 ```shell
 createSFProject.sh -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld -php-version=8.3 -mariadb-version=11.6 -postgres-version=17.0 -mysql-version=9.1 -firebird-version=5.0 -db-type=mariadb -symfony-version=7
 ```
