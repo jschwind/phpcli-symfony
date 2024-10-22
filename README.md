@@ -1,4 +1,6 @@
-# Create a Docker environment for a Symfony project.
+# PHPCLI-Symfony
+
+Create a Docker environment for a Symfony project.
 
 ## Installation
 ```shell
