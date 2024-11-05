@@ -22,7 +22,7 @@ Create a Symfony project with specific Git and optional version parameters.
 * `-git-username`: Git username.
 * `-git-email`: Git email.
 * `-php-version`: Optional. PHP version for the project (default: `8.3`).
-* `-mariadb-version`: Optional. MariaDB version for the project (default: `11.6`).
+* `-mariadb-version`: Optional. MariaDB version for the project (default: `11.5`).
 * `-postgres-version`: Optional. Postgress version for the project (default: `17.0`).
 * `-mysql-version`: Optional. MySQL version for the project (default: `9.1`).
 * `-firebird-version`: Optional. Firebird version for the project (default: `5.0`).

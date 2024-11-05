@@ -36,7 +36,7 @@ class ProjectSetup
         $this->phpVersion = (isset($options['php-version']) ? $options['php-version'] : '8.3');
         $this->postgresVersion = (isset($options['postgres-version']) ? $options['postgres-version'] : '17.0');
         $this->mysqlVersion = (isset($options['mysql-version']) ? $options['mysql-version'] : '9.1');
-        $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.6');
+        $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.5');
         $this->firebirdVersion = (isset($options['firebird-version']) ? $options['firebird-version'] : '5.0');
         $this->dbType = (isset($options['db-type']) ? $options['db-type'] : 'mariadb');
         $this->symfonyVersion = (isset($options['symfony-version']) ? $options['symfony-version'] : '7.*');
@@ -345,7 +345,7 @@ class ProjectSetup
         echo '    -git_username     Git username.'.self::NL;
         echo '    -git_email        Git email.'.self::NL;
         echo '    -php_version      Optional. PHP version for the project (default: 8.3).'.self::NL;
-        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.6).'.self::NL;
+        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.5).'.self::NL;
         echo '    -postgres_version Optional. Postgress version for the project (default: 17.0).'.self::NL;
         echo '    -mysql_version    Optional. MySQL version for the project (default: 9.1).'.self::NL;
         echo '    -firebird_version Optional. Firebird version for the project (default: 5.0).'.self::NL;
