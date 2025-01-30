@@ -152,6 +152,7 @@ class ProjectSetup
         $content[] = '          - PHP_MAX_EXECUTION_TIME=300';
         $content[] = '          - PHP_POST_MAX_SIZE=200M';
         $content[] = '          - PHP_UPLOAD_MAX_FILESIZE=100M';
+        $content[] = '          - PHP_DISMOD=ioncube';
         if ($this->dbType === 'mysql') {
             $content[] = '    db:';
             $content[] = '        image: mysql:'.$this->mysqlVersion;
