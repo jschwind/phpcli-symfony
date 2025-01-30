@@ -46,6 +46,18 @@ class ProjectSetup
 
     private function validateInputs()
     {
+        if (empty($this->projectName)) {
+            $this->projectName = basename($this->outputDir);
+        }
+
+        if (empty($this->gitUsername)) {
+            $this->gitUsername = exec('git config user.name');
+        }
+
+        if (empty($this->gitEmail)) {
+            $this->gitEmail = exec('git config user.email');
+        }
+
         if (empty($this->projectName) || empty($this->gitUsername) || empty($this->gitEmail)) {
             $this->printError('Missing arguments.');
             $this->printUsage();
@@ -67,7 +79,7 @@ class ProjectSetup
             exit(1);
         }
 
-        if (!in_array($this->dbType, self::DB_TYPES)) {
+        if (!in_array($this->dbType, ProjectSetup::DB_TYPES)) {
             $this->printError('Invalid database type. [mysql, postgres, mariadb]');
             exit(1);
         }
@@ -327,44 +339,44 @@ class ProjectSetup
 
     private function printError($message)
     {
-        echo self::COLORS['RED'].$message.self::COLORS['NONE'].self::NL;
+        echo ProjectSetup::COLORS['RED'].$message.ProjectSetup::COLORS['NONE'].ProjectSetup::NL;
     }
 
     private function printSuccess($message)
     {
-        echo self::COLORS['GREEN'].$message.self::COLORS['NONE'].self::NL;
+        echo ProjectSetup::COLORS['GREEN'].$message.ProjectSetup::COLORS['NONE'].ProjectSetup::NL;
     }
 
     private function printUsage()
     {
-        echo self::NL;
-        echo 'Create a Symfony project with specific Git and optional version parameters.'.self::NL;
-        echo self::NL;
-        echo 'OPTIONS'.self::NL;
-        echo '    -project_name     Name of the project.'.self::NL;
-        echo '    -git_username     Git username.'.self::NL;
-        echo '    -git_email        Git email.'.self::NL;
-        echo '    -php_version      Optional. PHP version for the project (default: 8.3).'.self::NL;
-        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.5).'.self::NL;
-        echo '    -postgres_version Optional. Postgress version for the project (default: 17.0).'.self::NL;
-        echo '    -mysql_version    Optional. MySQL version for the project (default: 9.1).'.self::NL;
-        echo '    -firebird_version Optional. Firebird version for the project (default: 5.0).'.self::NL;
-        echo '    -db-type          Optional. Database type for the project (default: mysql).'.self::NL;
-        echo '    -symfony-version  Optional. Symfony version for the project (default: 7).'.self::NL;
+        echo ProjectSetup::NL;
+        echo 'Create a Symfony project with specific Git and optional version parameters.'.ProjectSetup::NL;
+        echo ProjectSetup::NL;
+        echo 'OPTIONS'.ProjectSetup::NL;
+        echo '    -project_name     Name of the project.'.ProjectSetup::NL;
+        echo '    -git_username     Git username.'.ProjectSetup::NL;
+        echo '    -git_email        Git email.'.ProjectSetup::NL;
+        echo '    -php_version      Optional. PHP version for the project (default: 8.3).'.ProjectSetup::NL;
+        echo '    -mariadb_version  Optional. MariaDB version for the project (default: 11.5).'.ProjectSetup::NL;
+        echo '    -postgres_version Optional. Postgress version for the project (default: 17.0).'.ProjectSetup::NL;
+        echo '    -mysql_version    Optional. MySQL version for the project (default: 9.1).'.ProjectSetup::NL;
+        echo '    -firebird_version Optional. Firebird version for the project (default: 5.0).'.ProjectSetup::NL;
+        echo '    -db-type          Optional. Database type for the project (default: mysql).'.ProjectSetup::NL;
+        echo '    -symfony-version  Optional. Symfony version for the project (default: 7).'.ProjectSetup::NL;
         if ($this->isSH === true) {
-            echo self::NL;
-            echo 'USAGE'.self::NL;
-            echo '    createSFProject.sh -project-name=<project-name> -git-username=<git-username> -git-email=<git-email> [-php-version=<php-version>] [-maria-version=<mariadb-version>] [-postgres-version=<postgres-version>] [-mysql-version=<mysql-version>] [-firebird-version=<firebird-version>] [-db-type=<db-type>] [-symfony-version=<symfony-version>]'.self::NL;
-            echo self::NL;
-            echo 'EXAMPLE'.self::NL;
-            echo '    createSFProject.sh -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld'.self::NL;
+            echo ProjectSetup::NL;
+            echo 'USAGE'.ProjectSetup::NL;
+            echo '    createSFProject.sh -project-name=<project-name> -git-username=<git-username> -git-email=<git-email> [-php-version=<php-version>] [-maria-version=<mariadb-version>] [-postgres-version=<postgres-version>] [-mysql-version=<mysql-version>] [-firebird-version=<firebird-version>] [-db-type=<db-type>] [-symfony-version=<symfony-version>]'.ProjectSetup::NL;
+            echo ProjectSetup::NL;
+            echo 'EXAMPLE'.ProjectSetup::NL;
+            echo '    createSFProject.sh -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld'.ProjectSetup::NL;
         } else {
-            echo self::NL;
-            echo 'USAGE'.self::NL;
-            echo '    php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mariadb-version=<mariadb-version>] [--postgres-version=<postgres-version>] [--mysql-version=<mysql-version>] [--firebird-version=<firebird-version>] [--db-type=<db-type>] [--symfony-version=<symfony-version>]'.self::NL;
-            echo self::NL;
-            echo 'EXAMPLE'.self::NL;
-            echo '    php project.php --project-name=my-project --git-username=username --git-email=username@domain.tld'.self::NL;
+            echo ProjectSetup::NL;
+            echo 'USAGE'.ProjectSetup::NL;
+            echo '    php project.php --project-name=<project-name> --git-username=<git-username> --git-email=<git-email> [--php-version=<php-version>] [--mariadb-version=<mariadb-version>] [--postgres-version=<postgres-version>] [--mysql-version=<mysql-version>] [--firebird-version=<firebird-version>] [--db-type=<db-type>] [--symfony-version=<symfony-version>]'.ProjectSetup::NL;
+            echo ProjectSetup::NL;
+            echo 'EXAMPLE'.ProjectSetup::NL;
+            echo '    php project.php --project-name=my-project --git-username=username --git-email=username@domain.tld'.ProjectSetup::NL;
         }
     }
 }
