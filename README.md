@@ -3,19 +3,24 @@
 Create a Docker environment for a Symfony project.
 
 ## Installation
+
 ```shell
 git clone https://github.com/jschwind/phpcli-symfony.git
 cd phpcli-symfony
 chmod +x createSFProject.sh
 ```
-createSFProject.sh to PATH Variable or create a link, e.g., Arch/Manjaro Linux: ~/.bashrc
+
+Add `createSFProject.sh` to your PATH or create a symlink, e.g., on Arch/Manjaro Linux via `~/.bashrc`:
+
 ```shell
-sudo ln -s $(pwd)/createSFProject.sh /usr/local/bin
+sudo ln -s $(pwd)/createSFProject.sh /usr/local/bin/createSFProject
 ```
 
 ## Usage
 
-createSFProject.sh [OPTIONS]
+```shell
+createSFProject [OPTIONS]
+```
 
 Create a Symfony project with specific Git and optional version parameters.
 
@@ -34,6 +39,6 @@ Create a Symfony project with specific Git and optional version parameters.
 ## Examples
 
 ```shell
-createSFProject.sh -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld -php-version=8.3 -mariadb-version=11.6 -postgres-version=17.0 -mysql-version=9.1 -firebird-version=5.0 -db-type=mariadb -symfony-version=7
+createSFProject -project-name=myproject -git-username=myusername -git-email=myemail@mydomain.tld -php-version=8.3 -mariadb-version=11.6 -postgres-version=17.0 -mysql-version=9.1 -firebird-version=5.0 -db-type=mariadb -symfony-version=7
 ```
 
