@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * Create a Docker environment for a Symfony project.
+ *
+ * (c) 2025 Juergen Schwind <info@juergen-schwind.de>
+ * GitHub: https://github.com/jschwind/phpcli-symfony
+ *
+ * MIT License
+ *
+ */
+
 class ProjectSetup
 {
     const COLORS = ['GREEN' => "\033[32m", 'RED' => "\033[31m", 'NONE' => "\033[0m",];
