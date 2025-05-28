@@ -8,7 +8,7 @@ git clone https://github.com/jschwind/phpcli-symfony.git
 cd phpcli-symfony
 chmod +x createSFProject.sh
 ```
-createSFProject.sh to PATH Variable or create a link, e.g. Arch/Manjaro Linux: ~/.bashrc
+createSFProject.sh to PATH Variable or create a link, e.g., Arch/Manjaro Linux: ~/.bashrc
 ```shell
 sudo ln -s $(pwd)/createSFProject.sh /usr/local/bin
 ```
