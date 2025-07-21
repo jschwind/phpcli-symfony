@@ -40,18 +40,18 @@ class ProjectSetup
 
     private function setOptions($options)
     {
-        $this->projectName = (isset($options['project-name']) ? $options['project-name'] : null);
-        $this->gitUsername = (isset($options['git-username']) ? $options['git-username'] : null);
-        $this->gitEmail = (isset($options['git-email']) ? $options['git-email'] : null);
-        $this->phpVersion = (isset($options['php-version']) ? $options['php-version'] : '8.3');
-        $this->postgresVersion = (isset($options['postgres-version']) ? $options['postgres-version'] : '17.0');
-        $this->mysqlVersion = (isset($options['mysql-version']) ? $options['mysql-version'] : '9.1');
-        $this->mariadbVersion = (isset($options['mariadb-version']) ? $options['mariadb-version'] : '11.5');
-        $this->firebirdVersion = (isset($options['firebird-version']) ? $options['firebird-version'] : '5.0');
-        $this->dbType = (isset($options['db-type']) ? $options['db-type'] : 'mariadb');
-        $this->symfonyVersion = (isset($options['symfony-version']) ? $options['symfony-version'] : '7.*');
-        $this->outputDir = (isset($options['output-dir']) ? $options['output-dir'] : $this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR);
-        $this->isSH = (isset($options['is-sh']) ? (bool)$options['is-sh'] : false);
+        $this->projectName = (isset($options['project-name'])?$options['project-name']:null);
+        $this->gitUsername = (isset($options['git-username'])?$options['git-username']:null);
+        $this->gitEmail = (isset($options['git-email'])?$options['git-email']:null);
+        $this->phpVersion = (isset($options['php-version'])?$options['php-version']:'8.3');
+        $this->postgresVersion = (isset($options['postgres-version'])?$options['postgres-version']:'17.0');
+        $this->mysqlVersion = (isset($options['mysql-version'])?$options['mysql-version']:'9.1');
+        $this->mariadbVersion = (isset($options['mariadb-version'])?$options['mariadb-version']:'11.5');
+        $this->firebirdVersion = (isset($options['firebird-version'])?$options['firebird-version']:'5.0');
+        $this->dbType = (isset($options['db-type'])?$options['db-type']:'mariadb');
+        $this->symfonyVersion = (isset($options['symfony-version'])?$options['symfony-version']:'7.*');
+        $this->outputDir = (isset($options['output-dir'])?$options['output-dir']:$this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR);
+        $this->isSH = (isset($options['is-sh'])?(bool)$options['is-sh']:false);
     }
 
     private function validateInputs()
@@ -251,7 +251,7 @@ class ProjectSetup
         $content[] = '#### inside the container setup symfony';
         $content[] = '- `composer require jbsnewmedia/symfony-web-pack` to install the webapp bundle';
 
-        if ($this->dbType==='firebird') {
+        if ($this->dbType === 'firebird') {
             $content[] = '';
             $content[] = '### Doctrine Firebird';
             $content[] = '';
@@ -309,7 +309,7 @@ class ProjectSetup
         $content[] = 'RUN curl -1sLf \'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh\' | bash';
         $content[] = 'RUN apt-get update && apt-get install -y symfony-cli';
         $content[] = '';
-        if ($this->dbType==='firebird') {
+        if ($this->dbType === 'firebird') {
             $content[] = 'RUN apt-get install -y firebird-dev firebird3.0-utils && docker-php-source extract && git clone --branch v3.0.1 --depth 1 https://github.com/FirebirdSQL/php-firebird.git /usr/src/php/ext/interbase && docker-php-ext-install interbase';
             $content[] = '';
         }
