@@ -7,7 +7,6 @@ Erstellt eine Docker-Umgebung für ein Symfony-Projekt mit integrierten Code-Qua
 - PHP >= 8.2
 - Docker & Docker Compose
 - Git
-- Composer (lokal für einige Tools falls benötigt, aber primär via Docker)
 
 ## Installation
 
@@ -44,7 +43,7 @@ Das Skript führt Sie durch das Setup und fragt nach:
 - Git-E-Mail (Standard: aus git config)
 - PHP-Version (Standard: `8.3`)
 - Symfony-Version (Standard: `7.*`)
-- Datenbank-Typ (`postgres`, `mariadb`, `mysql`, `firebird`)
+- Datenbank-Typ (`postgres`, `mariadb`, `mysql`, `firebird`, Standard: `postgres`)
 - Code-Quality-Tools (`ecs`, `rector`, `phpstan`, `phpunit`)
 - Ausgabeverzeichnis (Standard: aktuelles Verzeichnis)
 

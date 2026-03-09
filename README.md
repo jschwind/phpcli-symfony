@@ -7,7 +7,6 @@ Create a Docker environment for a Symfony project with integrated code quality t
 - PHP >= 8.2
 - Docker & Docker Compose
 - Git
-- Composer (locally for some tools if needed, but primarily via Docker)
 
 ## Installation
 
@@ -44,7 +43,7 @@ The script will guide you through the setup, asking for:
 - Git Email (default: from git config)
 - PHP Version (default: `8.3`)
 - Symfony Version (default: `7.*`)
-- Database Type (`postgres`, `mariadb`, `mysql`, `firebird`)
+- Database Type (`postgres`, `mariadb`, `mysql`, `firebird`, default: `postgres`)
 - Code Quality Tools (`ecs`, `rector`, `phpstan`, `phpunit`)
 - Output Directory (default: current directory)
 
