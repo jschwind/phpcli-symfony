@@ -16,45 +16,143 @@ class ProjectSetup
     const NL = "\n";
     const DB_TYPES = ['mysql', 'postgres', 'mariadb', 'firebird'];
 
-    private ?string $projectName;
-    private ?string $gitUsername;
-    private ?string $gitEmail;
-    private string $phpVersion;
-    private string $mysqlVersion;
-    private string $postgresVersion;
-    private string $mariadbVersion;
-    private string $firebirdVersion;
-    private string $dbType;
-    private string $symfonyVersion;
-    private string $outputDir;
-    private string $rootPath;
-    private bool $isSH;
+    protected ?string $projectName;
+    protected ?string $gitUsername;
+    protected ?string $gitEmail;
+    protected string $phpVersion;
+    protected string $mysqlVersion;
+    protected string $postgresVersion;
+    protected string $mariadbVersion;
+    protected string $firebirdVersion;
+    protected string $dbType;
+    protected string $symfonyVersion;
+    protected string $outputDir;
+    protected bool $isSH;
+    protected bool $addCodeQuality;
+    protected array $codeQualityTools = [];
 
     public function __construct($options)
     {
-        $this->rootPath = realpath(dirname(__FILE__)).DIRECTORY_SEPARATOR;
-        $this->setOptions($options);
+        // Check if we should run interactive mode.
+        // We run it if no functional options are provided.
+        // 'is-sh' and 'output-dir' are considered internal/auto-set.
+        $functionalOptions = array_diff_key($options, ['is-sh' => 1, 'output-dir' => 1, 'code-quality' => 1, 'tools' => 1]);
+
+        if (empty($functionalOptions)) {
+            $this->setOptions($options); // Set defaults/internal first
+            $this->interactiveSetup();
+        } else {
+            $this->setOptions($options);
+        }
+
         $this->validateInputs();
         $this->setOutputDir();
     }
 
-    private function setOptions($options)
+    protected function interactiveSetup()
     {
-        $this->projectName = (isset($options['project-name'])?$options['project-name']:null);
+        if ($this->isSH) {
+             // Re-open STDIN for interactive mode when running via shell script if necessary, 
+             // though usually not needed unless piped.
+        }
+        echo ProjectSetup::NL;
+        echo "Welcome to Symfony Project Setup Tool".ProjectSetup::NL;
+        echo "-------------------------------------".ProjectSetup::NL;
+
+        $this->projectName = $this->ask("Project Name", basename(getcwd()));
+        $this->gitUsername = $this->ask("Git Username", exec('git config user.name'));
+        $this->gitEmail = $this->ask("Git Email", exec('git config user.email'));
+        $this->phpVersion = $this->ask("PHP Version", "8.3");
+        $this->symfonyVersion = $this->ask("Symfony Version", "7.*");
+
+        echo ProjectSetup::NL."Database Configuration:".ProjectSetup::NL;
+        $this->dbType = $this->askChoice("Database Type", ProjectSetup::DB_TYPES, "postgres");
+
+        $this->mariadbVersion = ($this->dbType === 'mariadb') ? $this->ask("MariaDB Version", "11.5") : "11.5";
+        $this->postgresVersion = ($this->dbType === 'postgres') ? $this->ask("PostgreSQL Version", "17") : "17";
+        $this->mysqlVersion = ($this->dbType === 'mysql') ? $this->ask("MySQL Version", "9.1") : "9.1";
+        $this->firebirdVersion = ($this->dbType === 'firebird') ? $this->ask("Firebird Version", "5.0") : "5.0";
+
+        echo ProjectSetup::NL."Code Quality Tools:".ProjectSetup::NL;
+        $this->addCodeQuality = $this->askConfirm("Add Code Quality Tools?", "yes");
+
+        if ($this->addCodeQuality) {
+            if ($this->askConfirm("Add ECS (Easy Coding Standard)?", "yes")) $this->codeQualityTools[] = 'ecs';
+            if ($this->askConfirm("Add Rector?", "yes")) $this->codeQualityTools[] = 'rector';
+            if ($this->askConfirm("Add PHPStan?", "yes")) $this->codeQualityTools[] = 'phpstan';
+            if ($this->askConfirm("Add PHPUnit?", "yes")) $this->codeQualityTools[] = 'phpunit';
+        }
+
+        $this->outputDir = $this->ask("Output Directory", getcwd().DIRECTORY_SEPARATOR);
+        if (substr($this->outputDir, -1) !== DIRECTORY_SEPARATOR) {
+            $this->outputDir .= DIRECTORY_SEPARATOR;
+        }
+    }
+
+    protected function ask($question, $default = null)
+    {
+        $prompt = $question;
+        if ($default !== null) {
+            $prompt .= " [$default]";
+        }
+        echo $prompt . ": ";
+        $input = trim(fgets(STDIN));
+        return $input === "" ? $default : $input;
+    }
+
+    protected function askChoice($question, array $choices, $default = null)
+    {
+        $prompt = $question . " (" . implode(", ", $choices) . ")";
+        if ($default !== null) {
+            $prompt .= " [$default]";
+        }
+        echo $prompt . ": ";
+        $input = trim(fgets(STDIN));
+        $input = $input === "" ? $default : $input;
+
+        if (!in_array($input, $choices)) {
+            echo "Invalid choice. Please choose from: " . implode(", ", $choices) . ProjectSetup::NL;
+            return $this->askChoice($question, $choices, $default);
+        }
+        return $input;
+    }
+
+    protected function askConfirm($question, $default = "yes")
+    {
+        $prompt = $question . " (yes/no) [$default]";
+        echo $prompt . ": ";
+        $input = strtolower(trim(fgets(STDIN)));
+        $input = $input === "" ? $default : $input;
+
+        return in_array($input, ["y", "yes", "true", "1"]);
+    }
+
+    protected function log($message)
+    {
+        echo $message . ProjectSetup::NL;
+    }
+
+    protected function setOptions($options)
+    {
+        $this->projectName = (isset($options['project-name'])?$options['project-name']:basename(getcwd()));
         $this->gitUsername = (isset($options['git-username'])?$options['git-username']:null);
         $this->gitEmail = (isset($options['git-email'])?$options['git-email']:null);
         $this->phpVersion = (isset($options['php-version'])?$options['php-version']:'8.3');
-        $this->postgresVersion = (isset($options['postgres-version'])?$options['postgres-version']:'17.0');
-        $this->mysqlVersion = (isset($options['mysql-version'])?$options['mysql-version']:'9.1');
-        $this->mariadbVersion = (isset($options['mariadb-version'])?$options['mariadb-version']:'11.5');
+        $this->postgresVersion = (isset($options['postgres-version'])?$options['postgres-version']:'17');
+        $this->mysqlVersion = (isset($options['mysql-version'])?$options['mysql-version']:'9');
+        $this->mariadbVersion = (isset($options['mariadb-version'])?$options['mariadb-version']:'12');
         $this->firebirdVersion = (isset($options['firebird-version'])?$options['firebird-version']:'5.0');
-        $this->dbType = (isset($options['db-type'])?$options['db-type']:'mariadb');
+        $this->dbType = (isset($options['db-type'])?$options['db-type']:'postgres');
         $this->symfonyVersion = (isset($options['symfony-version'])?$options['symfony-version']:'7.*');
-        $this->outputDir = (isset($options['output-dir'])?$options['output-dir']:$this->rootPath.'output'.DIRECTORY_SEPARATOR.$this->projectName.DIRECTORY_SEPARATOR);
-        $this->isSH = (isset($options['is-sh'])?(bool)$options['is-sh']:false);
+        $this->outputDir = (isset($options['output-dir'])?$options['output-dir']:getcwd().DIRECTORY_SEPARATOR);
+        $this->isSH = (isset($options['is-sh']) && ($options['is-sh'] === 'true' || $options['is-sh'] === true || $options['is-sh'] === false));
+        $this->addCodeQuality = (isset($options['code-quality']) && ($options['code-quality'] === 'true' || $options['code-quality'] === true || $options['code-quality'] === '1' || $options['code-quality'] === 1 || $options['code-quality'] === false));
+        if (isset($options['tools'])) {
+            $this->codeQualityTools = explode(',', $options['tools']);
+        }
     }
 
-    private function validateInputs()
+    protected function validateInputs()
     {
         if (empty($this->projectName)) {
             $this->projectName = basename($this->outputDir);
@@ -95,7 +193,7 @@ class ProjectSetup
         }
     }
 
-    private function setOutputDir()
+    protected function setOutputDir()
     {
         if (!is_dir($this->outputDir)) {
             mkdir($this->outputDir, 0777, true);
@@ -108,16 +206,405 @@ class ProjectSetup
 
     public function createProject()
     {
+        $this->log("Creating project: " . $this->projectName);
         $this->createGitattributes();
         $this->createDockerCompose();
         $this->createReadme();
         $this->createDockerFiles();
         $this->createScripts();
-        $this->printSuccess($this->projectName.' created.');
+        if ($this->addCodeQuality) {
+            $this->setupCodeQuality();
+        }
+        $this->printSuccess("Project setup complete in: " . $this->outputDir);
+    }
+
+    protected function setupCodeQuality()
+    {
+        $this->log("Setting up code quality tools...");
+        $targetDir = $this->outputDir;
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0777, true);
+        }
+
+        // 1. Process composer.json
+        $composerFile = $targetDir . 'composer.json';
+        $composerData = [];
+        if (file_exists($composerFile)) {
+            $composerData = json_decode(file_get_contents($composerFile), true);
+            if ($composerData === null) {
+                $composerData = [];
+            }
+        }
+
+        // Add bamarni/composer-bin-plugin if any tool is selected
+        if (!empty($this->codeQualityTools)) {
+            $composerData['require-dev']['bamarni/composer-bin-plugin'] = '^1.8';
+            $composerData['config']['allow-plugins']['bamarni/composer-bin-plugin'] = true;
+            $composerData['extra']['bamarni-bin']['bin-links'] = false;
+            $composerData['extra']['bamarni-bin']['target-directory'] = 'vendor-bin';
+            $composerData['extra']['bamarni-bin']['forward-command'] = true;
+        }
+
+        // Use internal skeleton composer.json for scripts
+        $skeletonComposer = json_decode($this->getSkeletonFile('composer.json'), true);
+        
+        if (!isset($composerData['scripts'])) {
+            $composerData['scripts'] = [];
+        }
+
+        foreach ($skeletonComposer['scripts'] as $key => $script) {
+            $match = false;
+            foreach ($this->codeQualityTools as $tool) {
+                if (strpos($key, "bin-$tool") !== false) {
+                    $match = true;
+                    break;
+                }
+            }
+            
+            // Keep general test/ci scripts and add them if they don't exist
+            if (in_array($key, ["test", "test-coverage", "test-full", "test-watch", "ci", "ci-fix", "ci-coverage"])) {
+                $match = true;
+            }
+
+            if ($match) {
+                // If it's a composite script (starts with @), filter its components
+                if (is_array($script)) {
+                    $filteredScript = [];
+                    foreach ($script as $subScript) {
+                        if (strpos($subScript, "@bin-") === 0) {
+                            $subTool = str_replace(["@bin-", "-install", "-update", "-v", "-fix", "-process", "-no-coverage", "-coverage"], "", $subScript);
+                            if (in_array($subTool, $this->codeQualityTools)) {
+                                $filteredScript[] = $subScript;
+                            }
+                        } else {
+                            $filteredScript[] = $subScript;
+                        }
+                    }
+                    if (!empty($filteredScript)) {
+                        $composerData['scripts'][$key] = $filteredScript;
+                    }
+                } else {
+                    $composerData['scripts'][$key] = $script;
+                }
+            }
+        }
+
+        file_put_contents($composerFile, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        // 2. Process other config files
+        $filesToCreate = [
+            'phpstan' => ['phpstan-global.neon'],
+            'phpunit' => ['phpunit-coverage.xml.dist', 'phpunit-no-coverage.xml.dist'],
+            'rector' => ['rector.php'],
+            'ecs' => ['.php-cs-fixer.dist.php']
+        ];
+
+        foreach ($filesToCreate as $tool => $files) {
+            if (in_array($tool, $this->codeQualityTools)) {
+                foreach ($files as $file) {
+                    $content = $this->getSkeletonFile($file);
+                    if ($content !== null) {
+                        if ($file === 'rector.php') {
+                            $phpVer = str_replace('.', '', $this->phpVersion);
+                            $content = preg_replace('/php\d+: true/', 'php' . $phpVer . ': true', $content);
+                        }
+                        if (strpos($file, 'phpunit') === 0) {
+                            $phpUnitVer = $this->getPhpUnitVersion($this->phpVersion);
+                            $phpUnitVerNumeric = ltrim($phpUnitVer, '^');
+                            
+                            // Adjust Schema version
+                            $content = preg_replace('/https:\/\/schema\.phpunit\.de\/\d+\.\d+\/phpunit\.xsd/', 'https://schema.phpunit.de/' . $phpUnitVerNumeric . '/phpunit.xsd', $content);
+
+                            if (version_compare($phpUnitVerNumeric, '10.0', '<')) {
+                                // For PHPUnit 9.6: Remove new attributes
+                                $content = preg_replace('/displayDetailsOnTestsThatTrigger\w+="true"/', '', $content);
+                                
+                                // Replace <source> with <filter> for coverage (if present)
+                                if (strpos($content, '<source') !== false) {
+                                    $sourceBlock = '/<source.*?>(.*?)<\/source>/s';
+                                    $filterBlock = "<filter>\n        <whitelist processUncoveredFilesFromWhitelist=\"true\">\n$1        </whitelist>\n    </filter>";
+                                    $content = preg_replace($sourceBlock, $filterBlock, $content);
+                                }
+                            }
+                        }
+                        file_put_contents($targetDir . $file, $content);
+                    }
+                }
+            }
+        }
+
+        // 3. Process vendor-bin folders
+        foreach ($this->codeQualityTools as $tool) {
+            $toolDir = 'vendor-bin' . DIRECTORY_SEPARATOR . $tool;
+            $destDir = $targetDir . $toolDir;
+            
+            $content = $this->getSkeletonFile($toolDir . DIRECTORY_SEPARATOR . 'composer.json');
+            if ($content !== null) {
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0777, true);
+                }
+                
+                $sfVersionConstraint = $this->symfonyVersion;
+                if (!preg_match('/[\^\~\>\<]/', $sfVersionConstraint) && strpos($sfVersionConstraint, '*') === false) {
+                    $sfVersionConstraint = '^' . $sfVersionConstraint;
+                }
+                
+                $content = preg_replace('/"symfony\/([^"]+)": "[^"]+"/', '"symfony/$1": "' . $sfVersionConstraint . '"', $content);
+                
+                if ($tool === 'phpunit' || $tool === 'rector') {
+                     $phpUnitVer = $this->getPhpUnitVersion($this->phpVersion);
+                     $content = preg_replace('/"phpunit\/phpunit": "\^11\.0"/', '"phpunit/phpunit": "' . $phpUnitVer . '"', $content);
+                }
+
+                if ($tool === 'rector') {
+                    $content = preg_replace('/"php": "\d+\.\d+"/', '"php": "' . $this->phpVersion . '"', $content);
+                }
+                
+                file_put_contents($destDir . DIRECTORY_SEPARATOR . 'composer.json', $content);
+            }
+        }
+    }
+
+    protected function getSkeletonFile($filename)
+    {
+        $skeleton = [
+            'composer.json' => '{
+  "require-dev": {
+    "../vendor/bamarni/composer-bin-plugin": "^1.8"
+  },
+  "config": {
+    "allow-plugins": {
+      "bamarni/composer-bin-plugin": true
+    }
+  },
+  "extra": {
+    "bamarni-bin": {
+      "bin-links": false,
+      "target-directory": "vendor-bin",
+      "forward-command": true
+    }
+  },
+  "scripts": {
+      "bin-ecs-install": [
+          "composer bin ../vendor-bin/ecs install"
+      ],
+      "bin-ecs-update": [
+          "composer bin ../vendor-bin/ecs update"
+      ],
+      "bin-ecs": ["vendor-bin/ecs/vendor/bin/php-cs-fixer check --allow-risky=yes"],
+      "bin-ecs-fix": ["vendor-bin/ecs/vendor/bin/php-cs-fixer fix --allow-risky=yes"],
+      "bin-ecs-v": ["vendor-bin/ecs/vendor/bin/php-cs-fixer -V"],
+
+      "bin-phpstan-install": [
+          "composer bin ../vendor-bin/phpstan install"
+      ],
+      "bin-phpstan-update": [
+          "composer bin ../vendor-bin/phpstan update"
+      ],
+      "bin-phpstan": ["vendor-bin/phpstan/vendor/bin/phpstan analyse --configuration=phpstan-global.neon"],
+      "bin-phpstan-v": ["vendor-bin/phpstan/vendor/bin/phpstan -V"],
+
+      "bin-phpunit-install": [
+          "composer bin ../vendor-bin/phpunit install"
+      ],
+      "bin-phpunit-update": [
+          "composer bin ../vendor-bin/phpunit update"
+      ],
+      "bin-phpunit": ["vendor-bin/phpunit/vendor/bin/phpunit"],
+      "bin-phpunit-no-coverage": ["vendor-bin/phpunit/vendor/bin/phpunit --configuration=phpunit-no-coverage.xml.dist"],
+      "bin-phpunit-coverage": ["XDEBUG_MODE=coverage vendor-bin/phpunit/vendor/bin/phpunit --configuration=phpunit-coverage.xml.dist --coverage-html var/coverage"],
+      "bin-phpunit-v": ["vendor-bin/phpunit/vendor/bin/phpunit --version"],
+
+      "bin-rector-install": [
+          "composer bin ../vendor-bin/rector install"
+      ],
+      "bin-rector-update": [
+          "composer bin ../vendor-bin/rector update"
+      ],
+      "bin-rector": ["vendor-bin/rector/vendor/bin/rector --dry-run"],
+      "bin-rector-process": ["vendor-bin/rector/vendor/bin/rector process"],
+      "bin-rector-v": ["vendor-bin/rector/vendor/bin/rector -V"],
+
+      "test": ["@bin-phpunit-no-coverage"],
+      "test-coverage": ["@bin-phpunit-coverage"],
+      "test-full": ["@bin-phpunit"],
+      "test-watch": ["@bin-phpunit --testdox"],
+
+      "ci": ["@bin-ecs", "@bin-rector", "@bin-phpstan", "@bin-phpunit-no-coverage"],
+      "ci-fix": ["@bin-ecs-fix", "@bin-rector-process", "@bin-phpstan", "@bin-phpunit-no-coverage"],
+      "ci-coverage": ["@bin-ecs", "@bin-rector", "@bin-phpstan", "@bin-phpunit-coverage"]
+  }
+}',
+            'phpstan-global.neon' => '# Basis for core and plugin code quality
+parameters:
+    treatPhpDocTypesAsCertain: false
+    paths:
+        - src
+    level: max',
+            'phpunit-coverage.xml.dist' => '<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+>
+    <testsuites>
+        <testsuite name="Project Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory suffix=".php">src</directory>
+        </include>
+    </source>
+</phpunit>',
+            'phpunit-no-coverage.xml.dist' => '<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+>
+    <testsuites>
+        <testsuite name="Project Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>',
+            'rector.php' => '<?php
+
+declare(strict_types=1);
+
+use Rector\CodeQuality\Rector\Class_\InlineConstructorDefaultToPropertyRector;
+use Rector\Config\RectorConfig;
+use Rector\Symfony\Set\SymfonySetList;
+use Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector;
+
+return RectorConfig::configure()
+    ->withPaths([
+        __DIR__ . \'/src\',
+    ])
+    ->withPhpSets(php82: true)
+
+    ->withComposerBased(
+        symfony: true,
+    )
+
+    ->withSets([
+        SymfonySetList::SYMFONY_CODE_QUALITY,
+        SymfonySetList::SYMFONY_CONSTRUCTOR_INJECTION,
+    ])
+
+    ->withRules([
+        InlineConstructorDefaultToPropertyRector::class,
+        DeclareStrictTypesRector::class,
+    ])
+    ->withParallel();',
+            '.php-cs-fixer.dist.php' => '<?php
+
+$finder = (new PhpCsFixer\Finder())
+    ->in(\'src\')
+;
+
+return (new PhpCsFixer\Config())
+    ->setRules([
+        \'@Symfony\' => true,
+        \'strict_param\' => true,
+        \'declare_strict_types\' => true,
+        \'phpdoc_to_comment\' => false,
+    ])
+    ->setFinder($finder)
+;',
+            'vendor-bin/ecs/composer.json' => '{
+    "require-dev": {
+        "symplify/easy-coding-standard": "*",
+        "friendsofphp/php-cs-fixer": "*"
+    },
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "sort-packages": true
+}',
+            'vendor-bin/phpstan/composer.json' => '{
+    "require-dev": {
+        "phpstan/phpstan": "^2.0",
+        "phpstan/extension-installer": "^1.0",
+        "phpstan/phpstan-doctrine": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-symfony": "^2.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true,
+            "bamarni/composer-bin-plugin": true
+        }
+    }
+}',
+            'vendor-bin/phpunit/composer.json' => '{
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "symfony/phpunit-bridge": "^7.*"
+    },
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        }
+    }
+}',
+            'vendor-bin/rector/composer.json' => '{
+    "require-dev": {
+        "rector/rector": "^2.3"
+    },
+    "config": {
+        "platform": {
+            "php": "8.2"
+        },
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        }
+    },
+    "sort-packages": true
+}',
+        ];
+        
+        $key = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filename);
+        // Map to forward slash for the internal array keys which are likely flat or use forward slash
+        $key = str_replace(DIRECTORY_SEPARATOR, '/', $filename);
+        
+        return isset($skeleton[$key]) ? $skeleton[$key] : null;
+    }
+
+    private function getPhpUnitVersion($phpVersion)
+    {
+        if (version_compare($phpVersion, '8.3', '>=')) {
+            return '^12.0';
+        } elseif (version_compare($phpVersion, '8.2', '>=')) {
+            return '^11.0';
+        } elseif (version_compare($phpVersion, '8.1', '>=')) {
+            return '^10.0';
+        } elseif (version_compare($phpVersion, '8.0', '>=')) {
+            return '^9.6';
+        } else {
+            return '^9.6';
+        }
     }
 
     private function createGitattributes()
     {
+        $this->log("Creating .gitattributes...");
         $content = [];
         $content[] = '*.css text eol=lf';
         $content[] = '*.htaccess text eol=lf';
@@ -142,6 +629,7 @@ class ProjectSetup
 
     private function createDockerCompose()
     {
+        $this->log("Creating docker-compose.yml...");
         $content = [];
         $content[] = 'services:';
         $content[] = '    web:';
@@ -220,6 +708,7 @@ class ProjectSetup
 
     private function createReadme()
     {
+        $this->log("Creating README.md...");
         $content = [];
         $content[] = '# '.$this->projectName;
         $content[] = '';
@@ -279,6 +768,7 @@ class ProjectSetup
 
     private function createDockerFiles()
     {
+        $this->log("Creating Dockerfiles...");
         $webDir = $this->outputDir.'docker'.DIRECTORY_SEPARATOR.'web'.DIRECTORY_SEPARATOR;
         if (!is_dir($webDir)) {
             mkdir($webDir, 0777, true);
@@ -353,7 +843,7 @@ class ProjectSetup
         echo ProjectSetup::COLORS['RED'].$message.ProjectSetup::COLORS['NONE'].ProjectSetup::NL;
     }
 
-    private function printSuccess($message)
+    protected function printSuccess($message)
     {
         echo ProjectSetup::COLORS['GREEN'].$message.ProjectSetup::COLORS['NONE'].ProjectSetup::NL;
     }
@@ -392,26 +882,32 @@ class ProjectSetup
     }
 }
 
-$options = getopt('', [
-    'project-name:',
-    'git-username:',
-    'git-email:',
-    'php-version::',
-    'mysql-version::',
-    'postgres-version::',
-    'mariadb-version::',
-    'firebird-version::',
-    'db-type::',
-    'symfony-version::',
-    'output-dir::',
-    'is-sh::',
-]);
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
+    $options = getopt('', [
+        'project-name:',
+        'git-username:',
+        'git-email:',
+        'php-version::',
+        'mysql-version::',
+        'postgres-version::',
+        'mariadb-version::',
+        'firebird-version::',
+        'db-type::',
+        'symfony-version::',
+        'output-dir::',
+        'is-sh::',
+        'code-quality::',
+        'tools::',
+    ]);
 
-foreach ($options as $key => $value) {
-    $options[$key] = trim($value);
+    foreach ($options as $key => $value) {
+        if (is_string($value)) {
+            $options[$key] = trim($value);
+        }
+    }
+
+    $projectSetup = new ProjectSetup($options);
+    $projectSetup->createProject();
 }
-
-$projectSetup = new ProjectSetup($options);
-$projectSetup->createProject();
 
 ?>

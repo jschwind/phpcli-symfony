@@ -61,4 +61,4 @@ done
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-php "$SCRIPT_DIR/project-symfony.php" --project-name="$PROJECT_NAME" --git-username="$GIT_USERNAME" --git-email="$GIT_EMAIL" --php-version="$PHP_VERSION" --mariadb-version="$MARIADB_VERSION" --postgres-version="$POSTGRES_VERSION" --mysql-version="$MYSQL_VERSION" --firebird-version="$FIREBIRD_VERSION" --db-type="$DB_TYPE" --symfony-version="$SF_VERSION" --output-dir="$PWD" --is-sh="true"
+php "$SCRIPT_DIR/project-symfony.php" "$@" --is-sh="true"
