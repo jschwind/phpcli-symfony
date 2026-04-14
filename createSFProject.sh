@@ -10,6 +10,9 @@ MYSQL_VERSION=""
 FIREBIRD_VERSION=""
 DB_TYPE=""
 SF_VERSION=""
+CODE_QUALITY=""
+TOOLS=""
+OUTPUT_DIR=""
 
 for i in "$@"
 do
@@ -52,6 +55,18 @@ case $i in
     ;;
     -symfony-version=*)
     SF_VERSION="${i#*=}"
+    shift
+    ;;
+    -code-quality=*)
+    CODE_QUALITY="${i#*=}"
+    shift
+    ;;
+    -tools=*)
+    TOOLS="${i#*=}"
+    shift
+    ;;
+    -output-dir=*)
+    OUTPUT_DIR="${i#*=}"
     shift
     ;;
     *)

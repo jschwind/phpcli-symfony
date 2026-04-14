@@ -14,7 +14,7 @@ class ProjectSetup
 {
     const COLORS = ['GREEN' => "\033[32m", 'RED' => "\033[31m", 'NONE' => "\033[0m",];
     const NL = "\n";
-    const DB_TYPES = ['mysql', 'postgres', 'mariadb', 'firebird'];
+    const DB_TYPES = ['mysql', 'postgres', 'mariadb', 'firebird', 'none'];
 
     protected ?string $projectName;
     protected ?string $gitUsername;
@@ -52,7 +52,7 @@ class ProjectSetup
     protected function interactiveSetup()
     {
         if ($this->isSH) {
-             // Re-open STDIN for interactive mode when running via shell script if necessary, 
+             // Re-open STDIN for interactive mode when running via shell script if necessary,
              // though usually not needed unless piped.
         }
         echo ProjectSetup::NL;
@@ -63,15 +63,17 @@ class ProjectSetup
         $this->gitUsername = $this->ask("Git Username", exec('git config user.name'));
         $this->gitEmail = $this->ask("Git Email", exec('git config user.email'));
         $this->phpVersion = $this->ask("PHP Version", "8.3");
-        $this->symfonyVersion = $this->ask("Symfony Version", "7.*");
+        $this->symfonyVersion = $this->ask("Symfony Version", "7");
 
         echo ProjectSetup::NL."Database Configuration:".ProjectSetup::NL;
         $this->dbType = $this->askChoice("Database Type", ProjectSetup::DB_TYPES, "postgres");
 
-        $this->mariadbVersion = ($this->dbType === 'mariadb') ? $this->ask("MariaDB Version", "11.5") : "11.5";
-        $this->postgresVersion = ($this->dbType === 'postgres') ? $this->ask("PostgreSQL Version", "17") : "17";
-        $this->mysqlVersion = ($this->dbType === 'mysql') ? $this->ask("MySQL Version", "9.1") : "9.1";
-        $this->firebirdVersion = ($this->dbType === 'firebird') ? $this->ask("Firebird Version", "5.0") : "5.0";
+        if ($this->dbType !== 'none') {
+            $this->mariadbVersion = ($this->dbType === 'mariadb') ? $this->ask("MariaDB Version", "11.5") : "11.5";
+            $this->postgresVersion = ($this->dbType === 'postgres') ? $this->ask("PostgreSQL Version", "17.0") : "17.0";
+            $this->mysqlVersion = ($this->dbType === 'mysql') ? $this->ask("MySQL Version", "9.1") : "9.1";
+            $this->firebirdVersion = ($this->dbType === 'firebird') ? $this->ask("Firebird Version", "5.0") : "5.0";
+        }
 
         echo ProjectSetup::NL."Code Quality Tools:".ProjectSetup::NL;
         $this->addCodeQuality = $this->askConfirm("Add Code Quality Tools?", "yes");
@@ -138,12 +140,12 @@ class ProjectSetup
         $this->gitUsername = (isset($options['git-username'])?$options['git-username']:null);
         $this->gitEmail = (isset($options['git-email'])?$options['git-email']:null);
         $this->phpVersion = (isset($options['php-version'])?$options['php-version']:'8.3');
-        $this->postgresVersion = (isset($options['postgres-version'])?$options['postgres-version']:'17');
-        $this->mysqlVersion = (isset($options['mysql-version'])?$options['mysql-version']:'9');
-        $this->mariadbVersion = (isset($options['mariadb-version'])?$options['mariadb-version']:'12');
+        $this->postgresVersion = (isset($options['postgres-version'])?$options['postgres-version']:'17.0');
+        $this->mysqlVersion = (isset($options['mysql-version'])?$options['mysql-version']:'9.1');
+        $this->mariadbVersion = (isset($options['mariadb-version'])?$options['mariadb-version']:'11.5');
         $this->firebirdVersion = (isset($options['firebird-version'])?$options['firebird-version']:'5.0');
         $this->dbType = (isset($options['db-type'])?$options['db-type']:'postgres');
-        $this->symfonyVersion = (isset($options['symfony-version'])?$options['symfony-version']:'7.*');
+        $this->symfonyVersion = (isset($options['symfony-version'])?$options['symfony-version']:'7');
         $this->outputDir = (isset($options['output-dir'])?$options['output-dir']:getcwd().DIRECTORY_SEPARATOR);
         $this->isSH = (isset($options['is-sh']) && ($options['is-sh'] === 'true' || $options['is-sh'] === true || $options['is-sh'] === false));
         $this->addCodeQuality = (isset($options['code-quality']) && ($options['code-quality'] === 'true' || $options['code-quality'] === true || $options['code-quality'] === '1' || $options['code-quality'] === 1 || $options['code-quality'] === false));
@@ -188,7 +190,7 @@ class ProjectSetup
         }
 
         if (!in_array($this->dbType, ProjectSetup::DB_TYPES)) {
-            $this->printError('Invalid database type. [mysql, postgres, mariadb]');
+            $this->printError('Invalid database type. [mysql, postgres, mariadb, firebird, none]');
             exit(1);
         }
     }
@@ -247,7 +249,7 @@ class ProjectSetup
 
         // Use internal skeleton composer.json for scripts
         $skeletonComposer = json_decode($this->getSkeletonFile('composer.json'), true);
-        
+
         if (!isset($composerData['scripts'])) {
             $composerData['scripts'] = [];
         }
@@ -260,7 +262,7 @@ class ProjectSetup
                     break;
                 }
             }
-            
+
             // Keep general test/ci scripts and add them if they don't exist
             if (in_array($key, ["test", "test-coverage", "test-full", "test-watch", "ci", "ci-fix", "ci-coverage"])) {
                 $match = true;
@@ -311,14 +313,14 @@ class ProjectSetup
                         if (strpos($file, 'phpunit') === 0) {
                             $phpUnitVer = $this->getPhpUnitVersion($this->phpVersion);
                             $phpUnitVerNumeric = ltrim($phpUnitVer, '^');
-                            
+
                             // Adjust Schema version
                             $content = preg_replace('/https:\/\/schema\.phpunit\.de\/\d+\.\d+\/phpunit\.xsd/', 'https://schema.phpunit.de/' . $phpUnitVerNumeric . '/phpunit.xsd', $content);
 
                             if (version_compare($phpUnitVerNumeric, '10.0', '<')) {
                                 // For PHPUnit 9.6: Remove new attributes
                                 $content = preg_replace('/displayDetailsOnTestsThatTrigger\w+="true"/', '', $content);
-                                
+
                                 // Replace <source> with <filter> for coverage (if present)
                                 if (strpos($content, '<source') !== false) {
                                     $sourceBlock = '/<source.*?>(.*?)<\/source>/s';
@@ -337,20 +339,20 @@ class ProjectSetup
         foreach ($this->codeQualityTools as $tool) {
             $toolDir = 'vendor-bin' . DIRECTORY_SEPARATOR . $tool;
             $destDir = $targetDir . $toolDir;
-            
+
             $content = $this->getSkeletonFile($toolDir . DIRECTORY_SEPARATOR . 'composer.json');
             if ($content !== null) {
                 if (!is_dir($destDir)) {
                     mkdir($destDir, 0777, true);
                 }
-                
+
                 $sfVersionConstraint = $this->symfonyVersion;
                 if (!preg_match('/[\^\~\>\<]/', $sfVersionConstraint) && strpos($sfVersionConstraint, '*') === false) {
                     $sfVersionConstraint = '^' . $sfVersionConstraint;
                 }
-                
+
                 $content = preg_replace('/"symfony\/([^"]+)": "[^"]+"/', '"symfony/$1": "' . $sfVersionConstraint . '"', $content);
-                
+
                 if ($tool === 'phpunit' || $tool === 'rector') {
                      $phpUnitVer = $this->getPhpUnitVersion($this->phpVersion);
                      $content = preg_replace('/"phpunit\/phpunit": "\^11\.0"/', '"phpunit/phpunit": "' . $phpUnitVer . '"', $content);
@@ -359,7 +361,7 @@ class ProjectSetup
                 if ($tool === 'rector') {
                     $content = preg_replace('/"php": "\d+\.\d+"/', '"php": "' . $this->phpVersion . '"', $content);
                 }
-                
+
                 file_put_contents($destDir . DIRECTORY_SEPARATOR . 'composer.json', $content);
             }
         }
@@ -579,11 +581,11 @@ return (new PhpCsFixer\Config())
     "sort-packages": true
 }',
         ];
-        
+
         $key = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filename);
         // Map to forward slash for the internal array keys which are likely flat or use forward slash
         $key = str_replace(DIRECTORY_SEPARATOR, '/', $filename);
-        
+
         return isset($skeleton[$key]) ? $skeleton[$key] : null;
     }
 
@@ -700,6 +702,8 @@ return (new PhpCsFixer\Config())
             $content[] = '            - ./docker/firebird/data:/firebird/data';
             $content[] = '        ports:';
             $content[] = '            - "3050:3050"';
+        } elseif ($this->dbType === 'none') {
+            // No database service
         }
 
         file_put_contents($this->outputDir.'docker-compose.yml', implode(PHP_EOL, $content));
@@ -725,15 +729,17 @@ return (new PhpCsFixer\Config())
         $content[] = '- `find /app/apptemp/ -name ".*" ! -name . ! -name .. -exec mv {} /app/ \;` to move the hidden files from the temp folder to the root folder';
         $content[] = '- `rm -R /app/apptemp` to remove the temp folder';
         $content[] = '';
-        $content[] = '#### mariadb|postgres|mysql setup';
-        if ($this->dbType === 'mariadb') {
-            $content[] = '- run `echo "/docker/mariadb/" >> .gitignore` to ignore the mariadb folder';
-        } elseif ($this->dbType === 'postgres') {
-            $content[] = '- run `echo "/docker/postgres/" >> .gitignore` to ignore the postgres folder';
-        } elseif ($this->dbType === 'mysql') {
-            $content[] = '- run `echo "/docker/mysql/" >> .gitignore` to ignore the mysql folder';
-        } elseif ($this->dbType === 'firebird') {
-            $content[] = '- run `echo "/docker/firebird/" >> .gitignore` to ignore the firebird folder';
+        if ($this->dbType !== 'none') {
+            $content[] = '#### mariadb|postgres|mysql setup';
+            if ($this->dbType === 'mariadb') {
+                $content[] = '- run `echo "/docker/mariadb/" >> .gitignore` to ignore the mariadb folder';
+            } elseif ($this->dbType === 'postgres') {
+                $content[] = '- run `echo "/docker/postgres/" >> .gitignore` to ignore the postgres folder';
+            } elseif ($this->dbType === 'mysql') {
+                $content[] = '- run `echo "/docker/mysql/" >> .gitignore` to ignore the mysql folder';
+            } elseif ($this->dbType === 'firebird') {
+                $content[] = '- run `echo "/docker/firebird/" >> .gitignore` to ignore the firebird folder';
+            }
         }
         $content[] = '- run `echo "/.idea/" >> .gitignore` to ignore the idea folder';
         $content[] = '';
@@ -862,7 +868,7 @@ return (new PhpCsFixer\Config())
         echo '    -postgres_version Optional. Postgress version for the project (default: 17.0).'.ProjectSetup::NL;
         echo '    -mysql_version    Optional. MySQL version for the project (default: 9.1).'.ProjectSetup::NL;
         echo '    -firebird_version Optional. Firebird version for the project (default: 5.0).'.ProjectSetup::NL;
-        echo '    -db-type          Optional. Database type for the project (default: mysql).'.ProjectSetup::NL;
+        echo '    -db-type          Optional. Database type for the project (default: postgres). [mysql, postgres, mariadb, firebird, none]'.ProjectSetup::NL;
         echo '    -symfony-version  Optional. Symfony version for the project (default: 7).'.ProjectSetup::NL;
         if ($this->isSH === true) {
             echo ProjectSetup::NL;

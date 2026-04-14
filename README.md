@@ -42,8 +42,8 @@ The script will guide you through the setup, asking for:
 - Git Username (default: from git config)
 - Git Email (default: from git config)
 - PHP Version (default: `8.3`)
-- Symfony Version (default: `7.*`)
-- Database Type (`postgres`, `mariadb`, `mysql`, `firebird`, default: `postgres`)
+- Symfony Version (default: `7`)
+- Database Type (`mysql`, `postgres`, `mariadb`, `firebird`, `none`, default: `postgres`)
 - Code Quality Tools (`ecs`, `rector`, `phpstan`, `phpunit`)
 - Output Directory (default: current directory)
 
@@ -58,8 +58,8 @@ createSFProject [OPTIONS]
 * `-git-username`: Git username.
 * `-git-email`: Git email.
 * `-php-version`: PHP version (default: `8.3`).
-* `-symfony-version`: Symfony version (default: `7.*`).
-* `-db-type`: Database type (`postgres`, `mariadb`, `mysql`, `firebird`) (default: `postgres`).
+* `-symfony-version`: Symfony version (default: `7`).
+* `-db-type`: Database type (`mysql`, `postgres`, `mariadb`, `firebird`, `none`) (default: `postgres`).
 * `-mariadb-version`: MariaDB version (default: `11.5`).
 * `-postgres-version`: PostgreSQL version (default: `17.0`).
 * `-mysql-version`: MySQL version (default: `9.1`).
