@@ -63,7 +63,7 @@ class ProjectSetup
         $this->gitUsername = $this->ask("Git Username", exec('git config user.name'));
         $this->gitEmail = $this->ask("Git Email", exec('git config user.email'));
         $this->phpVersion = $this->ask("PHP Version", "8.3");
-        $this->symfonyVersion = $this->ask("Symfony Version", "7");
+        $this->symfonyVersion = $this->ask("Symfony Version", "7.*");
 
         echo ProjectSetup::NL."Database Configuration:".ProjectSetup::NL;
         $this->dbType = $this->askChoice("Database Type", ProjectSetup::DB_TYPES, "postgres");
@@ -145,7 +145,7 @@ class ProjectSetup
         $this->mariadbVersion = (isset($options['mariadb-version'])?$options['mariadb-version']:'11.5');
         $this->firebirdVersion = (isset($options['firebird-version'])?$options['firebird-version']:'5.0');
         $this->dbType = (isset($options['db-type'])?$options['db-type']:'postgres');
-        $this->symfonyVersion = (isset($options['symfony-version'])?$options['symfony-version']:'7');
+        $this->symfonyVersion = (isset($options['symfony-version'])?$options['symfony-version']:'7.*');
         $this->outputDir = (isset($options['output-dir'])?$options['output-dir']:getcwd().DIRECTORY_SEPARATOR);
         $this->isSH = (isset($options['is-sh']) && ($options['is-sh'] === 'true' || $options['is-sh'] === true || $options['is-sh'] === false));
         $this->addCodeQuality = (isset($options['code-quality']) && ($options['code-quality'] === 'true' || $options['code-quality'] === true || $options['code-quality'] === '1' || $options['code-quality'] === 1 || $options['code-quality'] === false));

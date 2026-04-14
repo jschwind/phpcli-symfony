@@ -31,7 +31,7 @@ class QualityUpdate extends ProjectSetup
         } else {
             // For non-interactive update, we still need to set some defaults if they are missing
             if (empty($this->phpVersion)) $this->phpVersion = '8.3';
-            if (empty($this->symfonyVersion)) $this->symfonyVersion = '7';
+            if (empty($this->symfonyVersion)) $this->symfonyVersion = '7.*';
             $this->addCodeQuality = true; // Ensure code quality is enabled for update
         }
 
@@ -103,7 +103,7 @@ class QualityUpdate extends ProjectSetup
         $this->loadVersionsFromComposer();
 
         $this->phpVersion = $this->ask("PHP Version", $this->phpVersion ?? "8.3");
-        $this->symfonyVersion = $this->ask("Symfony Version", $this->symfonyVersion ?? "7");
+        $this->symfonyVersion = $this->ask("Symfony Version", $this->symfonyVersion ?? "7.*");
 
         echo ProjectSetup::NL."Code Quality Tools:".ProjectSetup::NL;
         if ($this->askConfirm("Add ECS (Easy Coding Standard)?", "yes")) $this->codeQualityTools[] = 'ecs';

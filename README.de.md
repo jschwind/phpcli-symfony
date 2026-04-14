@@ -42,7 +42,7 @@ Das Skript führt Sie durch das Setup und fragt nach:
 - Git-Benutzername (Standard: aus git config)
 - Git-E-Mail (Standard: aus git config)
 - PHP-Version (Standard: `8.3`)
-- Symfony-Version (Standard: `7`)
+- Symfony-Version (Standard: `7.*`)
 - Datenbank-Typ (`mysql`, `postgres`, `mariadb`, `firebird`, `none`, Standard: `postgres`)
 - Code-Quality-Tools (`ecs`, `rector`, `phpstan`, `phpunit`)
 - Ausgabeverzeichnis (Standard: aktuelles Verzeichnis)
@@ -58,7 +58,7 @@ createSFProject [OPTIONEN]
 * `-git-username`: Git-Benutzername.
 * `-git-email`: Git-E-Mail.
 * `-php-version`: PHP-Version (Standard: `8.3`).
-* `-symfony-version`: Symfony-Version (Standard: `7`).
+* `-symfony-version`: Symfony-Version (Standard: `7.*`).
 * `-db-type`: Datenbank-Typ (`mysql`, `postgres`, `mariadb`, `firebird`, `none`) (Standard: `postgres`).
 * `-mariadb-version`: MariaDB-Version (Standard: `11.5`).
 * `-postgres-version`: PostgreSQL-Version (Standard: `17.0`).
